@@ -13,11 +13,15 @@ WindowPilot 是一个用 SwiftUI 和 AppKit 编写的原生 macOS 窗口切换�
 灵感来自 [Contexts](https://contexts.co/) 的纵向窗口列表；本项目独立实现，与 Contexts 无关联，也不包含其代码或素材。
 
 
+![原生设置界面](docs/images/settings.png)
+
 ## 安装
 
 1. 从 [Releases](https://github.com/luckyyyyy/WindowPilot/releases/latest) 下载 DMG，打开后将 **WindowPilot** 拖到 **Applications**。
 2. 从“应用程序”打开，在“系统设置 → 隐私与安全性 → 辅助功能”中允许 WindowPilot。
 3. 按 **⌘ Tab** 开始切换。右上角菜单栏的重叠窗口图标可打开设置、暂停切换或退出。
+
+正式版本使用 Developer ID 签名，应用已通过 Apple 公证并附带离线公证票据。
 
 需要 **macOS 26 或更新版本**，支持 Apple Silicon 和 Intel。首次运行请退出其他接管 ⌘Tab 的切换器。无需屏幕录制权限。
 
