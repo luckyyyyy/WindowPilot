@@ -168,7 +168,7 @@ struct SettingsPane: View {
                 LabeledContent("状态", value: controller.statusText)
                 LabeledContent("预览") { SettingsButton("打开窗口切换器") { controller.begin() }.disabled(!controller.keyboardReady) }
             } footer: {
-                Text("关闭设置后继续在菜单栏运行。松开 ⌘ 切换，Esc 取消。")
+                Text("关闭设置后继续在菜单栏运行。松开 ⌘ 切换，按 X 搜索，Esc 取消。")
             }
         }
     }
@@ -206,12 +206,13 @@ struct SettingsPane: View {
             Section {
                 LabeledContent("下一个窗口", value: "⌘ Tab")
                 LabeledContent("上一个窗口", value: "⌘ ⇧ Tab")
-                LabeledContent("关闭选中的窗口", value: "⌘ W")
-                LabeledContent("退出选中窗口所属应用", value: "⌘ Q")
+                LabeledContent("关闭选中的窗口（非搜索时）", value: "⌘ W")
+                LabeledContent("退出选中窗口所属应用（非搜索时）", value: "⌘ Q")
                 LabeledContent("确认", value: "松开 ⌘ 或 Return")
                 LabeledContent("取消", value: "Esc")
                 LabeledContent("选择", value: "↑ / ↓")
-                LabeledContent("搜索标题或应用", value: "直接键入")
+                LabeledContent("进入搜索", value: "先按 X，再输入关键词")
+                LabeledContent("搜索时 ⌘W / ⌘Q", value: "输入 w / q")
             }
             Section {
                 Toggle("⌘ ` 切换当前应用的窗口", isOn: $controller.preferences.sameAppShortcut)

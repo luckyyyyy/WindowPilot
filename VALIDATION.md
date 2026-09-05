@@ -1,7 +1,13 @@
 # Validation
 
-Version 1.4.2: 31 tests passed locally with Thread Sanitizer (22 core tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
+Version 1.4.3: 35 tests passed locally with Thread Sanitizer (26 core/input tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
 
+
+## Explicit search mode, 1.4.3
+
+Regression tests send paired key-down/key-up events through the real `KeyboardInterceptor.handle` entry point. They verify: ordinary letters do not start searching; X enters search without entering the prefix into the query; `xq` matches QQ while Command remains held; Q/W/X input works with and without Command; deleting the last character keeps search mode active and window actions disabled; Escape clears both query and mode; and navigation preserves search. The empty search header is driven by mode rather than non-empty query. Existing selected-window action tests continue to cover normal-mode Cmd-W and modifier matching for Cmd-Q.
+
+These are programmatic native event tests, not a physical keyboard or live UI automation test.
 
 ## Own settings activation regression, 1.4.2
 

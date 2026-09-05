@@ -48,10 +48,12 @@ struct SwitcherView: View {
         GeometryReader { geometry in
             let overflows = layout.contentHeight > geometry.size.height + 0.5
             VStack(spacing: 0) {
-                if !controller.query.isEmpty {
+                if controller.searching {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                        Text(controller.query)
+                        Text(controller.query.isEmpty ? "输入应用名或窗口标题…" : controller.query)
+                            .foregroundStyle(controller.query.isEmpty ? .secondary : .primary)
+                            .lineLimit(1)
                         Spacer()
                         Text("\(controller.filteredItems.count)").foregroundStyle(.secondary)
                     }

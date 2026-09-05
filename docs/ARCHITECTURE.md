@@ -35,3 +35,7 @@ The stable feed is the `appcast.xml` asset of the latest GitHub Release. Enclosu
 ### Activating the application's own settings
 
 The nonactivating switcher does not guarantee cooperative app activation. `LocalWindows` orders the selected settings window forward without changing its normal level, requests activation, and falls back to `NSWorkspace.openApplication` for the explicit user action if the app remains inactive. Reopen callbacks share one pending request, and cancelled requests cannot reorder windows after completion. Visibility alone is not treated as evidence that the foreground process changed.
+
+### Search input mode
+
+Each switcher session starts in window-action mode. X enters explicit search mode, including when Command is still held. Search mode consumes Q/W as text before shortcut dispatch; the controller also rejects selected-window actions while searching. Emptying the query keeps this mode active. Cancelling/committing resets it for the next session. The panel header and its height follow the mode flag, so the input prompt is visible before any query text is typed.

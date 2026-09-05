@@ -12,6 +12,7 @@ final class SwitcherController {
     var sessionItems: [WindowItem] = []
     var selectedIndex = 0
     var query = ""
+    private(set) var searching = false
     var presented = false
     var heldCommand = false
     var trusted = false
@@ -173,6 +174,7 @@ final class SwitcherController {
         sessionItems = WindowOrdering.sorted(items.filter { preferences.accepts($0) && (!sameApp || $0.pid == frontPID) }, frontPID: frontPID)
         guard !sessionItems.isEmpty else { scheduleRefresh(); return false }
         query = ""
+        searching = false
         self.heldCommand = heldCommand
         selectedIndex = heldCommand ? (reverse ? sessionItems.count - 1 : (sessionItems.count > 1 ? 1 : 0)) : 0
         presented = true
@@ -183,7 +185,7 @@ final class SwitcherController {
     }
 
     var switcherLayout: SwitcherLayout {
-        SwitcherLayout(rowCount: filteredItems.count, compact: preferences.compact, searching: !query.isEmpty)
+        SwitcherLayout(rowCount: filteredItems.count, compact: preferences.compact, searching: searching)
     }
 
     func resizePanel() {
@@ -192,8 +194,14 @@ final class SwitcherController {
     }
 
     func move(_ delta: Int) { guard !actionInProgress else { return }; selectedIndex = WindowOrdering.nextIndex(selectedIndex, count: filteredItems.count, delta: delta) }
-    func appendQuery(_ text: String) { guard !actionInProgress else { return }; query += text; selectedIndex = 0 }
-    func deleteQuery() { guard !actionInProgress else { return }; if !query.isEmpty { query.removeLast(); selectedIndex = 0 } }
+    func beginSearch() {
+        guard presented, !actionInProgress, !searching else { return }
+        searching = true
+        query = ""
+        selectedIndex = 0
+    }
+    func appendQuery(_ text: String) { guard presented, searching, !actionInProgress else { return }; query += text; selectedIndex = 0 }
+    func deleteQuery() { guard searching, !actionInProgress else { return }; if !query.isEmpty { query.removeLast(); selectedIndex = 0 } }
     func select(_ item: WindowItem) { guard !actionInProgress else { return }; if let index = filteredItems.firstIndex(where: { $0.id == item.id }) { selectedIndex = index; commit() } }
     func containsMouse() -> Bool { panel?.frame.contains(NSEvent.mouseLocation) ?? false }
 
@@ -201,6 +209,7 @@ final class SwitcherController {
         presented = false
         panel?.orderOut(nil)
         query = ""
+        searching = false
     }
 
     func commandReleased() {
@@ -268,7 +277,7 @@ final class SwitcherController {
     }
 
     func performSelectedAction(_ action: SelectedWindowAction) {
-        guard presented, !actionInProgress, let target = selected else { return }
+        guard presented, !searching, !actionInProgress, let target = selected else { return }
         guard action != .closeWindow || !target.isAppOnly else { NSSound.beep(); return }
         actionInProgress = true
         releaseAfterAction = false

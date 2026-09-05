@@ -85,7 +85,7 @@ final class KeyboardInterceptor {
             return nil
         }
         guard controller.presented else { return Unmanaged.passUnretained(event) }
-        if let action = SelectedWindowAction.match(event) {
+        if !controller.searching, let action = SelectedWindowAction.match(event) {
             let firstPress = !swallowedKeys.contains(code) && event.getIntegerValueField(.keyboardEventAutorepeat) == 0
             swallowedKeys.insert(code)
             actionKeys.insert(code)
@@ -102,7 +102,13 @@ final class KeyboardInterceptor {
             if let characters = NSEvent(cgEvent: event)?.charactersIgnoringModifiers,
                !characters.isEmpty,
                characters.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) && $0.value < 0xF700 }) {
-                controller.appendQuery(characters)
+                if controller.searching {
+                    // Command can remain held while searching; Q/W are text here.
+                    controller.appendQuery(characters)
+                } else if characters.lowercased() == "x",
+                          event.flags.intersection([.maskAlternate, .maskControl]).isEmpty {
+                    controller.beginSearch()
+                }
             } else {
                 // Let unrelated shortcuts through after dismissing the switcher.
                 controller.cancel()
