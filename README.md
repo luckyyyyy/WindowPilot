@@ -13,7 +13,7 @@ WindowPilot 是一个用 SwiftUI 和 AppKit 编写的原生 macOS 窗口切换�
 灵感来自 [Contexts](https://contexts.co/) 的纵向窗口列表；本项目独立实现，与 Contexts 无关联，也不包含其代码或素材。
 
 
-![原生设置界面](docs/images/settings.png)
+![紧凑窗口列表](docs/images/switcher.png)
 
 ## 安装
 
@@ -48,6 +48,8 @@ WindowPilot 是一个用 SwiftUI 和 AppKit 编写的原生 macOS 窗口切换�
 | 搜索 | 直接输入 |
 | 取消 | Esc |
 
+
+![原生设置界面](docs/images/settings.png)
 
 无窗口应用的 ⌘W 不执行操作。关闭或退出遇到保存确认时，会收起列表并显示目标应用。标题排除规则支持正则表达式：`设置` 匹配包含“设置”的标题，`^设置$` 只匹配完整标题；留空表示排除整个应用。
 
