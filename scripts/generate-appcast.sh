@@ -17,4 +17,4 @@ if [[ -n "${1:-}" ]]; then cp "$1" "$FEED_DIR/WindowPilot.md"; fi
   --link "https://github.com/luckyyyyy/WindowPilot" "$FEED_DIR"
 cp "$FEED_DIR/appcast.xml" dist/appcast.xml
 python3 scripts/verify-appcast.py dist/appcast.xml dist/WindowPilot.dmg
-"$TOOLS/sign_update" --account "$ACCOUNT" --verify dist/appcast.xml
+swift scripts/verify-update-signatures.swift dist/appcast.xml dist/WindowPilot.dmg Resources/Info.plist
