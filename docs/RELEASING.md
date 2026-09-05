@@ -26,15 +26,13 @@ codesign --verify --verbose=2 dist/WindowPilot.dmg
 
 The script uses `xcodebuild -exportArchive` with Developer ID upload, then `-exportNotarizedApp`. It does not extract account passwords or export private keys. `dist/WindowPilot.zip` and the DMG contain the stapled application. Preserve or move the previous `.xcarchive` before submitting a new build.
 
-## Optional: notarize the DMG itself
+## Notarize the final DMG
 
-A signed DMG containing a notarized and stapled app can distribute that app. To staple a separate ticket to the outer DMG too, configure an Apple notarytool Keychain profile interactively and submit the finished image:
+The outer signed DMG also needs notarization. Do not treat a successful assessment of the contained application as approval of the DMG. Configure an Apple notarytool Keychain profile interactively, then submit and staple the final image:
 
 ```sh
 xcrun notarytool store-credentials WindowPilot-notary
-xcrun notarytool submit dist/WindowPilot.dmg --keychain-profile WindowPilot-notary --wait
-xcrun stapler staple dist/WindowPilot.dmg
-xcrun stapler validate dist/WindowPilot.dmg
+./scripts/notarize-dmg.sh
 ```
 
 Never put passwords, app-specific passwords, API keys or certificate exports into scripts, commits, issue comments or release assets.
