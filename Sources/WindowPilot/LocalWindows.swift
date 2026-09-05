@@ -13,9 +13,30 @@ final class LocalWindows {
     private var minimizing = false
     private var restoreAfterMinimize = false
     private var observations = Set<AnyCancellable>()
+    private var activationRequest: UUID?
+    private let isApplicationActive: () -> Bool
+    private let requestApplicationActivation: (@escaping @MainActor (Bool) -> Void) -> Void
+
+    init(isApplicationActive: @escaping () -> Bool = { NSApp.isActive },
+         requestApplicationActivation: @escaping (@escaping @MainActor (Bool) -> Void) -> Void = { completion in
+        // A global event tap/nonactivating panel does not grant cooperative activation.
+        // Launch Services handles the explicit user request to open this accessory app.
+        guard Bundle.main.bundleURL.pathExtension == "app" else { completion(false); return }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        configuration.addsToRecentItems = false
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { app, error in
+            let accepted = app != nil && error == nil
+            Task { @MainActor in completion(accepted) }
+        }
+    }) {
+        self.isApplicationActive = isApplicationActive
+        self.requestApplicationActivation = requestApplicationActivation
+    }
 
     func registerSettings(_ window: NSWindow) {
         observations.removeAll()
+        cancelPendingActivation()
         settings = window
         minimizing = false
         restoreAfterMinimize = false
@@ -61,7 +82,10 @@ final class LocalWindows {
         return true
     }
 
-    func cancelPendingActivation() { restoreAfterMinimize = false }
+    func cancelPendingActivation() {
+        restoreAfterMinimize = false
+        activationRequest = nil
+    }
 
     @discardableResult
     func activate(id: String) -> Bool {
@@ -71,9 +95,25 @@ final class LocalWindows {
             return true
         }
         NSApp.unhide(nil)
-        NSApp.activate()
         if window.isMiniaturized { window.deminiaturize(nil) }
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+        NSApp.activate()
+        // Visibility is not proof of activation. Request Launch Services activation
+        // when another process still owns the foreground, and coalesce reopen events.
+        if !isApplicationActive() && activationRequest == nil {
+            let ticket = UUID()
+            activationRequest = ticket
+            requestApplicationActivation { [weak self, weak window] accepted in
+                guard let self, self.activationRequest == ticket else { return }
+                self.activationRequest = nil
+                guard accepted, let window, window.isVisible, !window.isMiniaturized,
+                      self.isApplicationActive() else { return }
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+                SwitchTrace.mark("local.activation.completed")
+            }
+        }
         lastUsed = DispatchTime.now().uptimeNanoseconds
         wasFocused = true
         return true

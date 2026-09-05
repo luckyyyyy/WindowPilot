@@ -31,3 +31,7 @@ The default app does not log window titles or send network requests. Optional `-
 `AppUpdater` starts Sparkle 2.9.6 only after normal app launch. Its Combine bindings reflect Sparkle-owned persisted preferences and update-session availability. The main thread owns all updater and UI calls; test initialization does not start the updater. Sparkle handles HTTPS retrieval, signed appcast and archive verification, installation, rollback on failure, and relaunch.
 
 The stable feed is the `appcast.xml` asset of the latest GitHub Release. Enclosures point to immutable versioned release URLs. Both the feed and the notarized DMG are EdDSA signed. Keys remain in the developer's Keychain. Developer ID signing preserves the app identity across replacement. CI embeds the pinned framework with its helper apps, signs each nested component, and verifies both architectures.
+
+### Activating the application's own settings
+
+The nonactivating switcher does not guarantee cooperative app activation. `LocalWindows` orders the selected settings window forward without changing its normal level, requests activation, and falls back to `NSWorkspace.openApplication` for the explicit user action if the app remains inactive. Reopen callbacks share one pending request, and cancelled requests cannot reorder windows after completion. Visibility alone is not treated as evidence that the foreground process changed.

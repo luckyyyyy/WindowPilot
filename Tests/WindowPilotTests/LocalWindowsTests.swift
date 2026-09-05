@@ -31,6 +31,67 @@ struct LocalWindowsTests {
         #expect(!local.activate(id: "unknown-window"))
     }
 
+    @Test func ownWindowIsExplicitlyRaisedAndActivationRequestsAreCoalesced() {
+        TestApplication.prepare()
+        let window = RaiseRecordingWindow(contentRect: NSRect(x: 120, y: 120, width: 320, height: 160),
+            styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        var requests = 0
+        var finish: (@MainActor (Bool) -> Void)?
+        var active = false
+        let local = LocalWindows(isApplicationActive: { active }, requestApplicationActivation: { completion in
+            requests += 1
+            finish = completion
+        })
+        local.registerSettings(window)
+        #expect(local.activate(id: LocalWindows.settingsID))
+        #expect(window.unconditionalRaises > 0)
+        #expect(requests == 1)
+        // Launch Services delivers reopen to this same app; it must not start a loop.
+        #expect(local.activate(id: LocalWindows.settingsID))
+        #expect(requests == 1)
+        let raisedBeforeCompletion = window.unconditionalRaises
+        active = true
+        finish?(true)
+        #expect(window.unconditionalRaises > raisedBeforeCompletion)
+        #expect(window.level == .normal) // Never turn settings into an always-on-top window.
+    }
+
+    @Test func cancelledOwnActivationCannotRaiseAStaleWindow() {
+        TestApplication.prepare()
+        let window = RaiseRecordingWindow(contentRect: NSRect(x: 120, y: 120, width: 320, height: 160),
+            styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        var finish: (@MainActor (Bool) -> Void)?
+        var active = false
+        let local = LocalWindows(isApplicationActive: { active }, requestApplicationActivation: { finish = $0 })
+        local.registerSettings(window)
+        #expect(local.activate(id: LocalWindows.settingsID))
+        local.cancelPendingActivation() // A newer selection or close supersedes this request.
+        let raisedBeforeCompletion = window.unconditionalRaises
+        active = true
+        finish?(true)
+        #expect(window.unconditionalRaises == raisedBeforeCompletion)
+    }
+
+    @Test func restoresMinimizedSettingsThroughTheSameActivationPath() async throws {
+        let window = makeWindow()
+        defer { window.close() }
+        let local = LocalWindows(requestApplicationActivation: { $0(true) })
+        local.registerSettings(window)
+        window.makeKeyAndOrderFront(nil)
+        window.miniaturize(nil)
+        for _ in 0..<60 where !window.isMiniaturized { try await Task.sleep(for: .milliseconds(50)) }
+        #expect(window.isMiniaturized)
+        #expect(local.activate(id: LocalWindows.settingsID))
+        for _ in 0..<60 where window.isMiniaturized { try await Task.sleep(for: .milliseconds(50)) }
+        #expect(!window.isMiniaturized)
+        #expect(window.isVisible)
+        #expect(window.level == .normal)
+    }
+
     @Test func backgroundCatalogRejectsOwnProcessForReadsAndWrites() async {
         let window = makeWindow()
         defer { window.close() }
@@ -179,4 +240,12 @@ struct LocalWindowsTests {
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { .terminateCancel }
+}
+
+@MainActor private final class RaiseRecordingWindow: NSWindow {
+    var unconditionalRaises = 0
+    override func orderFrontRegardless() {
+        unconditionalRaises += 1
+        super.orderFrontRegardless()
+    }
 }
