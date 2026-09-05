@@ -1,0 +1,45 @@
+name: Build macOS
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      WINDOWPILOT_SIGN_IDENTITY: '-'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Tests with Thread Sanitizer
+        run: ./scripts/test.sh
+      - name: Build Apple Silicon and Intel
+        run: ./scripts/build.sh --universal
+      - name: Build disk image
+        run: ./scripts/build-dmg.sh
+      - name: Verify bundle and architectures
+        run: |
+          codesign --verify --deep --strict dist/WindowPilot.app
+          lipo dist/WindowPilot.app/Contents/MacOS/WindowPilot -verify_arch arm64 x86_64
+          plutil -lint dist/WindowPilot.app/Contents/Info.plist
+          shasum -a 256 dist/WindowPilot.zip dist/WindowPilot.dmg > dist/SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: WindowPilot-universal-development
+          path: |
+            dist/WindowPilot.zip
+            dist/WindowPilot.dmg
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

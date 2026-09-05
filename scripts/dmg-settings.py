@@ -1,0 +1,22 @@
+from pathlib import Path
+root = Path(defines.get('root', '.')).resolve()
+application = str(Path(defines.get('app', root / 'dist/WindowPilot.app')).resolve())
+files = [application]
+symlinks = {'Applications': '/Applications'}
+icon = str(root / 'Resources/WindowPilotIcon.icns')
+background = str(root / 'dist/dmg-background.tiff')
+format = 'UDZO'
+filesystem = 'HFS+'
+window_rect = ((120, 120), (660, 430))
+default_view = 'icon-view'
+show_status_bar = False
+show_tab_view = False
+show_toolbar = False
+show_pathbar = False
+show_sidebar = False
+arrange_by = None
+icon_size = 96
+text_size = 13
+label_pos = 'bottom'
+icon_locations = {'WindowPilot.app': (176, 207), 'Applications': (484, 207)}
+hide_extensions = [] # FinderInfo flags invalidate strict code-signature checks.
