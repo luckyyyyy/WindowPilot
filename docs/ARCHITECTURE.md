@@ -12,6 +12,7 @@ WindowPilot uses public macOS APIs and has no runtime package dependencies.
 | `KeyboardInterceptor.swift` | Global event tap and local key handling |
 | `SelectedWindowAction.swift` | Selected-window close/quit key matching |
 | `SwitcherView.swift` | Nonactivating panel and compact searchable rows |
+| `SwitcherLayout.swift` | Content height including search/empty state, capped at 80% of the current display’s usable height |
 | `SettingsView.swift` | Native NavigationSplitView, grouped forms and exclusion editor |
 | `Models.swift` | Ordering, filtering and persistent preferences |
 

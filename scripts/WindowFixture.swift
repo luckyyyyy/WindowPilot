@@ -9,7 +9,13 @@ import AppKit
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "Quit WindowPilot Test", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu; menu.addItem(appItem); NSApp.mainMenu = menu
-        for (i, title) in ["WindowPilot Test · Document", "WindowPilot Test · 设置"].enumerated() {
+        var titles = ["WindowPilot Test · Document", "WindowPilot Test · 设置"]
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "--window-count"), args.indices.contains(index + 1),
+           let count = Int(args[index + 1]), count > 2 {
+            titles += (3...min(count, 100)).map { "WindowPilot Test · Document \($0)" }
+        }
+        for (i, title) in titles.enumerated() {
             let w = i == 0
               ? NSWindow(contentRect: NSRect(x: 140, y: 160, width: 500, height: 300), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
               : NSPanel(contentRect: NSRect(x: 280, y: 280, width: 420, height: 240), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)

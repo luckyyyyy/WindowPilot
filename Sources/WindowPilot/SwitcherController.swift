@@ -177,9 +177,18 @@ final class SwitcherController {
         selectedIndex = heldCommand ? (reverse ? sessionItems.count - 1 : (sessionItems.count > 1 ? 1 : 0)) : 0
         presented = true
         if panel == nil { panel = SwitcherPanel(controller: self) }
-        panel?.show(rowCount: sessionItems.count, compact: preferences.compact)
+        panel?.show(layout: switcherLayout)
         scheduleRefresh()
         return true
+    }
+
+    var switcherLayout: SwitcherLayout {
+        SwitcherLayout(rowCount: filteredItems.count, compact: preferences.compact, searching: !query.isEmpty)
+    }
+
+    func resizePanel() {
+        guard presented else { return }
+        panel?.resize(layout: switcherLayout)
     }
 
     func move(_ delta: Int) { guard !actionInProgress else { return }; selectedIndex = WindowOrdering.nextIndex(selectedIndex, count: filteredItems.count, delta: delta) }
