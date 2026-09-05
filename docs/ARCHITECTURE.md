@@ -25,3 +25,9 @@ Own-process AX operations are rejected at the catalog boundary. `LocalWindows` r
 Close uses the target's AX close button; quit requests normal NSRunningApplication termination. Neither force-quits an app. If an application shows a save confirmation or refuses an action, the switcher dismisses and activates it for the user to decide.
 
 The default app does not log window titles or send network requests. Optional `--trace-switches /absolute/path/trace.log` records monotonic action/scan timings without titles. Timings describe API completion, not measured display latency.
+
+## Updates
+
+`AppUpdater` starts Sparkle 2.9.6 only after normal app launch. Its Combine bindings reflect Sparkle-owned persisted preferences and update-session availability. The main thread owns all updater and UI calls; test initialization does not start the updater. Sparkle handles HTTPS retrieval, signed appcast and archive verification, installation, rollback on failure, and relaunch.
+
+The stable feed is the `appcast.xml` asset of the latest GitHub Release. Enclosures point to immutable versioned release URLs. Both the feed and the notarized DMG are EdDSA signed. Keys remain in the developer's Keychain. Developer ID signing preserves the app identity across replacement. CI embeds the pinned framework with its helper apps, signs each nested component, and verifies both architectures.

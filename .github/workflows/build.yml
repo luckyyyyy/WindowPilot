@@ -32,6 +32,9 @@ jobs:
         run: |
           codesign --verify --deep --strict dist/WindowPilot.app
           lipo dist/WindowPilot.app/Contents/MacOS/WindowPilot -verify_arch arm64 x86_64
+          lipo dist/WindowPilot.app/Contents/Frameworks/Sparkle.framework/Sparkle -verify_arch arm64 x86_64
+          test -x dist/WindowPilot.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate
+          test -L dist/WindowPilot.app/Contents/Frameworks/Sparkle.framework/Versions/Current
           plutil -lint dist/WindowPilot.app/Contents/Info.plist
           shasum -a 256 dist/WindowPilot.zip dist/WindowPilot.dmg > dist/SHA256SUMS
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

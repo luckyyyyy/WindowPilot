@@ -57,7 +57,7 @@ extension SettingsPage {
         case .general: "启动 开机 登录 行距 紧凑 外观 权限 辅助功能 暂停"
         case .windows: "最小化 隐藏 排除 规则 标题 过滤"
         case .shortcuts: "键盘 cmd command tab 关闭 退出 搜索"
-        case .about: "版本 GitHub 开源 隐私 扫描 刷新"
+        case .about: "版本 GitHub 开源 隐私 扫描 刷新 更新 下载 安装"
         }
     }
 }
@@ -111,8 +111,6 @@ struct SettingsPane: View {
     let page: SettingsPage
     @State private var selectedRule: UUID?
     @State private var addingRule = false
-    @State private var selectedApp = ""
-    @State private var titlePattern = ""
 
     var body: some View {
         Form {
@@ -144,8 +142,12 @@ struct SettingsPane: View {
             }
         }
         .formStyle(.grouped)
+        .controlSize(.regular)
+        .buttonStyle(.bordered)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $addingRule) { ruleEditor }
+        .sheet(isPresented: $addingRule) {
+            ExclusionRuleEditor(apps: controller.availableApps) { controller.preferences.rules.append($0) }
+        }
     }
 
     private var general: some View {
@@ -155,16 +157,16 @@ struct SettingsPane: View {
                 Toggle("登录时自动启动", isOn: Binding(get: { controller.loginEnabled }, set: { controller.setLogin($0) }))
                 Toggle("更紧凑的行距", isOn: $controller.preferences.compact)
                 if controller.loginNeedsApproval {
-                    Button("打开登录项设置…") { SMAppService.openSystemSettingsLoginItems() }
+                    LabeledContent("登录项授权") { SettingsButton("打开系统设置…") { SMAppService.openSystemSettingsLoginItems() } }
                 }
             }
             Section {
                 LabeledContent("辅助功能", value: controller.trusted ? "已授权" : "未授权")
                 if !controller.trusted {
-                    Button("打开系统设置并授权…") { controller.requestAccessibility() }
+                    LabeledContent("授予权限") { SettingsButton("打开系统设置…") { controller.requestAccessibility() } }
                 }
                 LabeledContent("状态", value: controller.statusText)
-                Button("打开窗口切换器") { controller.begin() }.disabled(!controller.keyboardReady)
+                LabeledContent("预览") { SettingsButton("打开窗口切换器") { controller.begin() }.disabled(!controller.keyboardReady) }
             } footer: {
                 Text("关闭设置后继续在菜单栏运行。松开 ⌘ 切换，Esc 取消。")
             }
@@ -184,18 +186,16 @@ struct SettingsPane: View {
                     TableColumn("窗口标题") { rule in Text(rule.titlePattern.isEmpty ? "所有窗口" : rule.titlePattern) }
                 }
                 .frame(height: 120)
-                HStack {
+                HStack(spacing: 8) {
                     Button {
-                        selectedApp = controller.availableApps.first?.id ?? ""
-                        titlePattern = ""
                         addingRule = true
-                    } label: { Image(systemName: "plus") }
-                    .help("添加排除规则")
+                    } label: { Image(systemName: "plus").frame(width: 16, height: 16) }
+                    .accessibilityLabel("添加排除规则").help("添加排除规则")
                     Button {
                         controller.preferences.rules.removeAll { $0.id == selectedRule }
                         selectedRule = nil
-                    } label: { Image(systemName: "minus") }
-                    .disabled(selectedRule == nil).help("移除排除规则")
+                    } label: { Image(systemName: "minus").frame(width: 16, height: 16) }
+                    .disabled(selectedRule == nil).accessibilityLabel("移除排除规则").help("移除排除规则")
                 }
             } header: { Text("不显示的窗口") }
         }
@@ -223,27 +223,50 @@ struct SettingsPane: View {
         Group {
             Section {
                 LabeledContent("版本", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版")
-                Link("GitHub 源码与反馈", destination: URL(string: "https://github.com/luckyyyyy/WindowPilot")!)
+                LabeledContent("开源项目") { Link(destination: URL(string: "https://github.com/luckyyyyy/WindowPilot")!) { Text("GitHub 源码与反馈").frame(minWidth: 112) } }
                 LabeledContent("许可证", value: "MIT")
             }
+            UpdateSettings()
             Section {
                 LabeledContent("可切换项目", value: "\(controller.items.filter { controller.preferences.accepts($0) }.count)")
                 LabeledContent("最近一次扫描", value: String(format: "%.0f ms", controller.lastScanDuration * 1000))
-                Button("刷新窗口列表") { controller.refresh() }
-            } header: { Text("运行状态") } footer: { Text("仅在本机处理窗口信息，无网络请求或遥测。") }
+                LabeledContent("窗口列表") { SettingsButton("刷新列表") { controller.refresh() } }
+            } header: { Text("运行状态") } footer: { Text("窗口标题仅在本机处理，不上传窗口信息或遥测。软件更新连接 GitHub。") }
         }
     }
 
+}
+
+/// Equal-sized native text actions in settings rows; icon tools and sheet actions keep their own sizes.
+struct SettingsButton: View {
+    let title: String
+    let action: () -> Void
+    init(_ title: String, action: @escaping () -> Void) { self.title = title; self.action = action }
+    var body: some View { Button(action: action) { Text(title).frame(minWidth: 112) } }
+}
+
+private struct ExclusionRuleEditor: View {
+    let apps: [AppChoice]
+    let add: (ExclusionRule) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedApp: String
+    @State private var titlePattern = ""
+
+    init(apps: [AppChoice], add: @escaping (ExclusionRule) -> Void) {
+        self.apps = apps
+        self.add = add
+        _selectedApp = State(initialValue: apps.first?.id ?? "")
+    }
+    private var selected: AppChoice? { apps.first { $0.id == selectedApp } }
     private var patternValid: Bool {
         titlePattern.isEmpty || (try? NSRegularExpression(pattern: titlePattern)) != nil
     }
-
-    private var ruleEditor: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("不显示的窗口").font(.headline)
             Form {
                 Picker("应用", selection: $selectedApp) {
-                    ForEach(controller.availableApps) { app in Text(app.name).tag(app.id) }
+                    ForEach(apps) { app in Text(app.name).tag(app.id) }
                 }
                 TextField("窗口标题", text: $titlePattern, prompt: Text("留空表示所有窗口"))
                 Text("按标题匹配；例如“设置”匹配包含设置的标题，“^设置$”只匹配完整标题。")
@@ -252,16 +275,14 @@ struct SettingsPane: View {
             }
             HStack {
                 Spacer()
-                Button("取消") { addingRule = false }.keyboardShortcut(.cancelAction)
-                Button("添加") {
-                    guard let app = controller.availableApps.first(where: { $0.id == selectedApp }) else { return }
-                    controller.preferences.rules.append(ExclusionRule(bundleID: app.id, appName: app.name, titlePattern: titlePattern))
-                    addingRule = false
-                }.keyboardShortcut(.defaultAction).disabled(selectedApp.isEmpty || !patternValid)
+                Button { dismiss() } label: { Text("取消").frame(minWidth: 52) }.keyboardShortcut(.cancelAction)
+                Button {
+                    guard let selected else { return }
+                    add(ExclusionRule(bundleID: selected.id, appName: selected.name, titlePattern: titlePattern))
+                    dismiss()
+                } label: { Text("添加").frame(minWidth: 52) }
+                .keyboardShortcut(.defaultAction).disabled(selected == nil || !patternValid)
             }
-        }.padding(20).frame(width: 380)
-            .onAppear {
-                if selectedApp.isEmpty { selectedApp = controller.availableApps.first?.id ?? "" }
-            }
+        }.controlSize(.regular).buttonStyle(.bordered).padding(20).frame(width: 380)
     }
 }

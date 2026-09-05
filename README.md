@@ -21,6 +21,8 @@ WindowPilot 是一个用 SwiftUI 和 AppKit 编写的原生 macOS 窗口切换�
 2. 从“应用程序”打开，在“系统设置 → 隐私与安全性 → 辅助功能”中允许 WindowPilot。
 3. 按 **⌘ Tab** 开始切换。右上角菜单栏的重叠窗口图标可打开设置、暂停切换或退出。
 
+从 1.4 起支持自动更新：默认每天检查 GitHub Releases，在后台下载并于退出时安装。菜单栏的“检查更新…”可立即更新，“设置 → 关于”可关闭自动检查或自动安装。1.3 及更早版本需要手动安装一次新版。更新包和更新列表均验证 EdDSA 签名。
+
 正式版本使用 Developer ID 签名，应用已通过 Apple 公证并附带离线公证票据。
 
 需要 **macOS 26 或更新版本**，支持 Apple Silicon 和 Intel。首次运行请退出其他接管 ⌘Tab 的切换器。无需屏幕录制权限。
@@ -55,7 +57,7 @@ WindowPilot 是一个用 SwiftUI 和 AppKit 编写的原生 macOS 窗口切换�
 
 ## 构建
 
-安装 Xcode 26+，选择其命令行工具。应用本身没有第三方依赖。
+安装 Xcode 26+，选择其命令行工具。Swift Package Manager 会下载固定版本的 Sparkle 2.9.6，用于软件更新。
 
 ```sh
 git clone https://github.com/luckyyyyy/WindowPilot.git
@@ -75,7 +77,7 @@ open dist/WindowPilot.app
 
 ## 实现与隐私
 
-窗口读取、恢复和关闭使用公开 Accessibility API；SwiftUI 提供界面，AppKit 管理浮层和自身窗口，`SMAppService` 管理登录启动。没有网络请求、遥测或窗口截图功能，窗口标题仅在本机处理。
+窗口读取、恢复和关闭使用公开 Accessibility API；SwiftUI 提供界面，AppKit 管理浮层和自身窗口，`SMAppService` 管理登录启动。软件更新通过 Sparkle 连接 GitHub Releases；不采集遥测、不上传窗口信息，窗口标题仅在本机处理。
 
 扫描和切换使用独立队列，按键不等待整轮扫描。AX 通知按应用合并增量刷新，定时完整校准；超时应用保留缓存并退避重试。自身窗口始终在主线程通过 AppKit 操作，避免同进程 AX 回调引起崩溃。详见[架构](docs/ARCHITECTURE.md)和[验证范围](VALIDATION.md)。
 

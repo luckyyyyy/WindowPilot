@@ -27,8 +27,12 @@ else
   BIN_DIR="$(swift build -c release --show-bin-path)"
   cp "$BIN_DIR/WindowPilot" "$APP/Contents/MacOS/WindowPilot"
 fi
+SPARKLE_SOURCE="$PROJECT_DIR/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
+mkdir -p "$APP/Contents/Frameworks"
+ditto --norsrc --noextattr "$SPARKLE_SOURCE" "$FRAMEWORK"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
-cp Resources/WindowPilotIcon.icns "$APP/Contents/Resources/"
+cp Resources/WindowPilotIcon.icns Resources/Sparkle-LICENSE.txt "$APP/Contents/Resources/"
 # Sign outside File Provider folders, where FinderInfo can be reattached.
 xattr -dr com.apple.FinderInfo "$APP" 2>/dev/null || true
 xattr -dr com.apple.ResourceFork "$APP" 2>/dev/null || true
@@ -42,7 +46,18 @@ if [[ -z "$SIGN_IDENTITY" ]]; then
 fi
 SIGN_OPTIONS=(--force --options runtime --sign "$SIGN_IDENTITY")
 if [[ "$SIGN_IDENTITY" != "-" ]]; then SIGN_OPTIONS+=(--timestamp); fi
-codesign "${SIGN_OPTIONS[@]}" "$APP"
+# Sign helpers from the inside out, preserving the downloader's entitlements.
+codesign "${SIGN_OPTIONS[@]}" "$FRAMEWORK/Versions/B/XPCServices/Installer.xpc"
+codesign "${SIGN_OPTIONS[@]}" --preserve-metadata=entitlements "$FRAMEWORK/Versions/B/XPCServices/Downloader.xpc"
+codesign "${SIGN_OPTIONS[@]}" "$FRAMEWORK/Versions/B/Autoupdate"
+codesign "${SIGN_OPTIONS[@]}" "$FRAMEWORK/Versions/B/Updater.app"
+codesign "${SIGN_OPTIONS[@]}" "$FRAMEWORK"
+if [[ "$SIGN_IDENTITY" == "-" ]]; then
+  # Library validation requires a real Team ID; development artifacts use ad-hoc signing.
+  codesign --force --sign - "$APP"
+else
+  codesign "${SIGN_OPTIONS[@]}" "$APP"
+fi
 codesign --verify --deep --strict "$APP"
 mkdir -p dist
 ditto --norsrc --noextattr "$APP" dist/WindowPilot.app
