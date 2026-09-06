@@ -26,11 +26,26 @@ private struct PreviewRows: View {
         }
         .padding(8)
         .frame(width: 640)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.93), in: .rect(cornerRadius: 10))
-        .background(.regularMaterial, in: .rect(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.18), lineWidth: 1))
-        .environment(\.colorScheme, .dark)
     }
+}
+
+/// A safe, contrasting desktop substitute for inspecting behind-window blur.
+private struct PreviewBackdrop: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [.blue, .purple, .orange], startPoint: .leading, endPoint: .trailing)
+            HStack(spacing: 75) {
+                ForEach(0..<6) { _ in
+                    Rectangle().fill(.white.opacity(0.55)).frame(width: 36)
+                }
+            }
+        }
+    }
+}
+
+private final class PreviewPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
 }
 
 @main
@@ -39,12 +54,23 @@ private enum SwitcherPreview {
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)
         app.appearance = NSAppearance(named: CommandLine.arguments.contains("--light") ? .aqua : .darkAqua)
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 128),
+        let backdrop = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 300),
             styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        backdrop.title = "WindowPilot Glass Preview · Sample Backdrop"
+        backdrop.contentView = NSHostingView(rootView: PreviewBackdrop())
+        backdrop.center()
+        backdrop.makeKeyAndOrderFront(nil)
+        let window = PreviewPanel(contentRect: NSRect(x: 0, y: 0, width: 640, height: 128),
+            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.hidesOnDeactivate = false
+        window.level = .popUpMenu
         window.acceptsMouseMovedEvents = true
-        window.title = "WindowPilot Hover Preview"
-        window.contentView = NSHostingView(rootView: PreviewRows())
-        window.center()
+        window.title = "WindowPilot Glass Preview"
+        window.contentView = SwitcherSurface(rootView: PreviewRows())
+        window.setFrameOrigin(NSPoint(x: backdrop.frame.midX - 320, y: backdrop.frame.minY + 86))
         window.makeKeyAndOrderFront(nil)
         app.activate()
         app.run()

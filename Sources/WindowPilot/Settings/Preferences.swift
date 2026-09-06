@@ -28,6 +28,7 @@ final class Preferences {
     var shortcuts = ShortcutConfiguration() { didSet { save() } }
     var sameAppShortcut = true { didSet { save() } }
     var compact = true { didSet { save() } }
+    var appearance = AppearancePreference.system { didSet { save() } }
     var excludedBundleIDs = "" { didSet { save() } }
     var rules: [ExclusionRule] = [] { didSet { save() } }
 
@@ -45,6 +46,7 @@ final class Preferences {
            let saved = try? JSONDecoder().decode(ShortcutConfiguration.self, from: data), saved.isValid { shortcuts = saved }
         sameAppShortcut = d.object(forKey: "sameAppShortcut") as? Bool ?? true
         compact = d.object(forKey: "compact") as? Bool ?? true
+        appearance = d.string(forKey: "appearance").flatMap(AppearancePreference.init(rawValue:)) ?? .system
         excludedBundleIDs = d.string(forKey: "excludedBundleIDs") ?? ""
         if let data = d.data(forKey: "rules"), let saved = try? JSONDecoder().decode([ExclusionRule].self, from: data) { rules = saved }
         isLoading = false
@@ -60,6 +62,7 @@ final class Preferences {
         if let data = try? JSONEncoder().encode(shortcuts) { d.set(data, forKey: "shortcuts") }
         d.set(sameAppShortcut, forKey: "sameAppShortcut")
         d.set(compact, forKey: "compact")
+        d.set(appearance.rawValue, forKey: "appearance")
         d.set(excludedBundleIDs, forKey: "excludedBundleIDs")
         if let data = try? JSONEncoder().encode(rules) { d.set(data, forKey: "rules") }
     }

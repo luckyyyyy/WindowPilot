@@ -21,4 +21,4 @@ swift scripts/assets/make-icon.swift dist/WindowPilot.iconset
 iconutil -c icns dist/WindowPilot.iconset -o dist/WindowPilotIcon.icns
 ```
 
-`testing/WindowFixture.swift` is a disposable native window fixture for manual close, minimize, search and save/cancel checks. It is not part of the shipping application. `testing/preview-switcher.sh` opens the real switcher UI with safe sample titles for hover and layout inspection; it neither scans nor operates on user windows.
+`testing/WindowFixture.swift` is a disposable native window fixture for manual close, minimize, search and save/cancel checks. It is not part of the shipping application. `testing/preview-switcher.sh` opens the shipping row and native glass surface in a transparent borderless panel over a safe sample backdrop; it neither scans nor operates on user windows. Pass `--light` for Aqua; the default is Dark Aqua. Single-window captures may omit the compositor's behind-window glass effect, so inspect the live panel for actual transparency and blur.

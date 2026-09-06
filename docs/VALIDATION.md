@@ -1,5 +1,16 @@
 # Validation
 
+## Native switcher glass, 1.5.2
+
+The switcher now hosts its SwiftUI content in AppKit's `NSGlassEffectView` using the standard glass style. The 93%-opaque window-color fill, extra SwiftUI material and custom white border are removed. AppKit owns the glass backdrop and edge; the panel remains nonopaque with a clear window background. General settings offer System (default), Light and Dark appearances, persisted across launches and applied to the whole app through `NSApplication.appearance`. System sets the override to nil so native windows and SwiftUI continue following macOS. Neutral hover feedback uses the current foreground color so it remains visible in Aqua and Dark Aqua. The app already requires macOS 26, where this public glass API is available; no OS-version-specific border is drawn.
+
+All 53 tests pass with Thread Sanitizer on macOS 26.6.2 / Xcode 26.6 (43 core/input/search/shortcut/preference tests and 10 isolated native-window cases). New coverage checks default and invalid appearance values, persistence of all three choices without changing row preferences, updates reaching existing native settings and glass content, and clearing application/window overrides when returning to System.
+
+The preview shares the shipping surface and rows and uses a safe striped gradient behind a transparent borderless panel. Both appearances were inspected for readable labels, selected rows and intact layout. The isolated-window automation captures do **not** establish the live desktop transparency/blur appearance. macOS 27 and physical pointer behavior have not been tested.
+
+![Native glass surface in Aqua; isolated window capture](images/glass-preview-light.png)
+![Native glass surface in Dark Aqua; isolated window capture](images/glass-preview-dark.png)
+
 Version 1.5.1: 51 tests passed locally with Thread Sanitizer (42 core/input/search/shortcut tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
 
 

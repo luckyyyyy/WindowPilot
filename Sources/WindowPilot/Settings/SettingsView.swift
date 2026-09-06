@@ -54,7 +54,7 @@ extension SettingsPage {
     }
     var keywords: String {
         switch self {
-        case .general: "启动 开机 登录 行距 紧凑 外观 权限 辅助功能 暂停"
+        case .general: "启动 开机 登录 行距 紧凑 外观 深色 浅色 亮色 跟随系统 权限 辅助功能 暂停"
         case .windows: "最小化 隐藏 排除 规则 标题 过滤"
         case .shortcuts: "键盘 cmd command tab 关闭 退出 搜索"
         case .about: "版本 GitHub 开源 隐私 扫描 刷新 更新 下载 安装"
@@ -164,6 +164,11 @@ struct SettingsPane: View {
                 Toggle("启用窗口切换", isOn: Binding(get: { controller.preferences.enabled }, set: { controller.setEnabled($0) })).controlSize(.mini)
                 Toggle("登录时自动启动", isOn: Binding(get: { controller.loginEnabled }, set: { controller.setLogin($0) })).controlSize(.mini)
                 Toggle("更紧凑的行距", isOn: $controller.preferences.compact).controlSize(.mini)
+                Picker("外观", selection: Binding(get: { controller.preferences.appearance }, set: { controller.setAppearance($0) })) {
+                    ForEach(AppearancePreference.allCases) { appearance in
+                        Text(appearance.title).tag(appearance)
+                    }
+                }
                 if controller.loginNeedsApproval {
                     LabeledContent("登录项授权") { SettingsButton("打开系统设置…") { SMAppService.openSystemSettingsLoginItems() } }
                 }

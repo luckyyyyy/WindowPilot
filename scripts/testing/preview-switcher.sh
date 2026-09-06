@@ -18,5 +18,6 @@ swiftc -parse-as-library \
   Sources/WindowPilot/Switcher/WindowSearch.swift \
   Sources/WindowPilot/Switcher/SearchHighlight.swift \
   Sources/WindowPilot/Switcher/SwitcherRow.swift \
+  Sources/WindowPilot/Switcher/SwitcherSurface.swift \
   scripts/testing/SwitcherPreview.swift -o "$APP/Contents/MacOS/WindowPilotPreview"
 exec "$APP/Contents/MacOS/WindowPilotPreview" "$@"

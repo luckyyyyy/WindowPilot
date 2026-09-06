@@ -66,6 +66,7 @@ final class SwitcherController {
 
     func start() {
         guard timer == nil else { return }
+        NSApp.appearance = preferences.appearance.appearance
         keyboard.controller = self
         observers.onChange = { [weak self] pid in
             self?.catalog.invalidate(pid: pid)
@@ -389,6 +390,12 @@ final class SwitcherController {
             loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
             lastError = nil
         } catch { lastError = "无法更新开机启动：\(error.localizedDescription)" }
+    }
+
+    func setAppearance(_ appearance: AppearancePreference) {
+        preferences.appearance = appearance
+        // Nil restores live system inheritance for native windows and SwiftUI content.
+        NSApp.appearance = appearance.appearance
     }
 
     func showSettings() {

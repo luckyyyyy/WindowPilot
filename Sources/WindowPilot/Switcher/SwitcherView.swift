@@ -53,14 +53,10 @@ struct SwitcherView: View {
                 }
             }
             .padding(.vertical, SwitcherLayout.verticalPadding)
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.93), in: .rect(cornerRadius: 10))
-            .background(.regularMaterial, in: .rect(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.18), lineWidth: 1))
         }
         .onChange(of: layout) { _, _ in controller.resizePanel() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
             controller.resizePanel()
         }
-        .environment(\.colorScheme, .dark)
     }
 }

@@ -9,7 +9,6 @@ final class SwitcherPanel: NSPanel {
         isOpaque = false
         acceptsMouseMovedEvents = true
         backgroundColor = .clear
-        appearance = NSAppearance(named: .darkAqua)
         hasShadow = true
         level = .popUpMenu
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
@@ -18,7 +17,7 @@ final class SwitcherPanel: NSPanel {
         becomesKeyOnlyIfNeeded = true
         animationBehavior = .none
         isReleasedWhenClosed = false
-        contentView = NSHostingView(rootView: SwitcherView(controller: controller))
+        contentView = SwitcherSurface(rootView: SwitcherView(controller: controller))
         setAccessibilityLabel("WindowPilot 窗口切换器")
     }
 

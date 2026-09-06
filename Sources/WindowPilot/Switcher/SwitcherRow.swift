@@ -13,7 +13,7 @@ struct SwitcherRow: View {
     private var backgroundColor: Color {
         // Keyboard selection remains distinct from neutral pointer feedback.
         if selected { return Color(nsColor: .selectedContentBackgroundColor) }
-        return hovered ? .white.opacity(0.10) : .clear
+        return hovered ? Color.primary.opacity(0.10) : .clear
     }
 
     var body: some View {

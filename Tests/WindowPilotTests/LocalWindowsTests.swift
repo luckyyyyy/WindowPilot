@@ -4,6 +4,39 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct LocalWindowsTests {
+    @Test func appearanceChangesReachExistingNativeWindowsAndGlass() throws {
+        TestApplication.prepare()
+        let suite = "WindowPilotTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        let previousAppearance = NSApp.appearance
+        defer {
+            NSApp.appearance = previousAppearance
+            defaults.removePersistentDomain(forName: suite)
+        }
+        let controller = SwitcherController()
+        controller.preferences = Preferences(defaults: defaults)
+        let panel = SwitcherPanel(controller: controller)
+        let settings = SettingsWindowController(controller: controller)
+        let settingsWindow = try #require(settings.window)
+        defer { panel.close(); settingsWindow.close() }
+        let glass = try #require(panel.contentView as? NSGlassEffectView)
+        #expect(!panel.isOpaque)
+        #expect(panel.backgroundColor.alphaComponent == 0)
+        #expect(glass.style == .regular)
+        for (choice, expected) in [(AppearancePreference.dark, NSAppearance.Name.darkAqua), (.light, .aqua)] {
+            controller.setAppearance(choice)
+            #expect(Preferences(defaults: defaults).appearance == choice)
+            for view in [glass, try #require(glass.contentView), try #require(settingsWindow.contentView)] {
+                #expect(view.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == expected)
+            }
+        }
+        controller.setAppearance(.system)
+        #expect(NSApp.appearance == nil)
+        #expect(panel.appearance == nil)
+        #expect(settingsWindow.appearance == nil)
+        #expect(Preferences(defaults: defaults).appearance == .system)
+    }
+
     private func makeWindow() -> NSWindow {
         TestApplication.prepare()
         NSApp.setActivationPolicy(.accessory)
