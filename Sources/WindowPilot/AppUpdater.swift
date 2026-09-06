@@ -36,7 +36,7 @@ struct CheckForUpdatesButton: View {
     @ObservedObject private var updater = AppUpdater.shared
     var inSettings = false
     var body: some View {
-        Button { updater.check() } label: { Text("检查更新…").frame(minWidth: inSettings ? 112 : nil) }.disabled(!updater.canCheck)
+        Button { updater.check() } label: { Text("检查更新…").frame(minWidth: inSettings ? 96 : nil) }.disabled(!updater.canCheck)
     }
 }
 
@@ -44,8 +44,8 @@ struct UpdateSettings: View {
     @ObservedObject private var updater = AppUpdater.shared
     var body: some View {
         Section {
-            Toggle("自动检查更新", isOn: Binding(get: { updater.automaticChecks }, set: { updater.setAutomaticChecks($0) }))
-            Toggle("自动下载并安装更新", isOn: Binding(get: { updater.automaticDownloads }, set: { updater.setAutomaticDownloads($0) }))
+            Toggle("自动检查更新", isOn: Binding(get: { updater.automaticChecks }, set: { updater.setAutomaticChecks($0) })).controlSize(.mini)
+            Toggle("自动下载并安装更新", isOn: Binding(get: { updater.automaticDownloads }, set: { updater.setAutomaticDownloads($0) })).controlSize(.mini)
                 .disabled(!updater.automaticChecks)
             LabeledContent("上次检查") {
                 if let date = updater.lastCheck {

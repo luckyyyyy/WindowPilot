@@ -15,6 +15,8 @@ final class SwitcherController {
     private(set) var searching = false
     var presented = false
     var heldCommand = false
+    var heldModifiers: CGEventFlags = .maskCommand
+    let shortcutRecorder = ShortcutRecorder()
     var trusted = false
     var keyboardReady = false
     var scanning = false
@@ -59,7 +61,7 @@ final class SwitcherController {
         if !trusted { return "需要辅助功能权限" }
         if !preferences.enabled { return "已暂停 · 使用系统切换器" }
         if !keyboardReady { return "快捷键尚未就绪" }
-        return "已就绪 · ⌘Tab 切换窗口"
+        return "已就绪 · \(preferences.shortcuts.allWindows.display) 切换窗口"
     }
 
     func start() {
@@ -103,7 +105,7 @@ final class SwitcherController {
         if trusted { refresh() }
         else { items = []; observers.update(pids: []) }
         // Secure Input or sleep may hide a modifier-release event.
-        if presented && heldCommand && !CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand) {
+        if presented && heldCommand && CGEventSource.flagsState(.combinedSessionState).intersection(heldModifiers) != heldModifiers {
             if actionInProgress { releaseAfterAction = true }
             else { cancel() }
         }
@@ -398,5 +400,5 @@ final class SwitcherController {
         scheduleRefresh()
     }
 
-    func stop() { keyboard.stop(); timer?.invalidate(); timer = nil; observers.update(pids: []) }
+    func stop() { shortcutRecorder.stop(); keyboard.stop(); timer?.invalidate(); timer = nil; observers.update(pids: []) }
 }

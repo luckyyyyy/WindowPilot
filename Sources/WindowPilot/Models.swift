@@ -64,6 +64,7 @@ final class Preferences {
     var includeMinimized = true { didSet { save() } }
     var includeHidden = true { didSet { save() } }
     var includeWindowless = true { didSet { save() } }
+    var shortcuts = ShortcutConfiguration() { didSet { save() } }
     var sameAppShortcut = true { didSet { save() } }
     var compact = true { didSet { save() } }
     var excludedBundleIDs = "" { didSet { save() } }
@@ -79,6 +80,8 @@ final class Preferences {
         includeMinimized = d.object(forKey: "includeMinimized") as? Bool ?? true
         includeHidden = d.object(forKey: "includeHidden") as? Bool ?? true
         includeWindowless = d.object(forKey: "includeWindowless") as? Bool ?? true
+        if let data = d.data(forKey: "shortcuts"),
+           let saved = try? JSONDecoder().decode(ShortcutConfiguration.self, from: data), saved.isValid { shortcuts = saved }
         sameAppShortcut = d.object(forKey: "sameAppShortcut") as? Bool ?? true
         compact = d.object(forKey: "compact") as? Bool ?? true
         excludedBundleIDs = d.string(forKey: "excludedBundleIDs") ?? ""
@@ -93,6 +96,7 @@ final class Preferences {
         d.set(includeMinimized, forKey: "includeMinimized")
         d.set(includeHidden, forKey: "includeHidden")
         d.set(includeWindowless, forKey: "includeWindowless")
+        if let data = try? JSONEncoder().encode(shortcuts) { d.set(data, forKey: "shortcuts") }
         d.set(sameAppShortcut, forKey: "sameAppShortcut")
         d.set(compact, forKey: "compact")
         d.set(excludedBundleIDs, forKey: "excludedBundleIDs")

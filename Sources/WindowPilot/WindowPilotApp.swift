@@ -46,7 +46,7 @@ struct StatusMenu: View {
         Button("打开窗口切换器") { controller.begin() }.disabled(!controller.keyboardReady)
         Button("设置…") { controller.showSettings() }.keyboardShortcut(",")
         CheckForUpdatesButton()
-        Toggle("启用 ⌘Tab", isOn: Binding(get: { controller.preferences.enabled }, set: { controller.setEnabled($0) }))
+        Toggle("启用 \(controller.preferences.shortcuts.allWindows.display)", isOn: Binding(get: { controller.preferences.enabled }, set: { controller.setEnabled($0) }))
         Divider()
         Button("退出 WindowPilot") { NSApp.terminate(nil) }.keyboardShortcut("q")
     }

@@ -11,10 +11,10 @@ final class SettingsWindowController: NSWindowController {
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.toolbarStyle = .unified
+        window.toolbarStyle = .unifiedCompact
         window.toolbar = NSToolbar(identifier: "WindowPilotSettingsToolbar")
-        window.setContentSize(NSSize(width: 780, height: 660))
-        window.minSize = NSSize(width: 720, height: 520)
+        window.setContentSize(NSSize(width: 740, height: 660))
+        window.minSize = NSSize(width: 700, height: 520)
         window.isReleasedWhenClosed = false
         window.center()
         super.init(window: window)
@@ -78,25 +78,25 @@ struct SettingsRoot: View {
                             Text(page.rawValue)
                         } icon: {
                             Image(systemName: page.icon)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(.white)
-                                .frame(width: 25, height: 25)
-                                .background(page.tint.gradient, in: .rect(cornerRadius: 6))
+                                .frame(width: 20, height: 20)
+                                .background(page.tint.gradient, in: .rect(cornerRadius: 5))
                         }
-                        .padding(.vertical, 3)
+                        .padding(.vertical, 0)
                         .tag(page)
                     }
                 } header: {
                     HStack(spacing: 9) {
                         Image(nsImage: NSApp.applicationIconImage)
-                            .resizable().frame(width: 32, height: 32)
+                            .resizable().frame(width: 28, height: 28)
                         Text("WindowPilot").font(.headline).foregroundStyle(.primary)
-                    }.padding(.vertical, 10)
+                    }.padding(.vertical, 6)
                 }
             }
             .listStyle(.sidebar)
             .searchable(text: $search, placement: .sidebar, prompt: "搜索设置")
-            .navigationSplitViewColumnWidth(min: 185, ideal: 205, max: 235)
+            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 240)
         } detail: {
             SettingsPane(controller: controller, page: selection ?? .general)
                 .navigationTitle((selection ?? .general).rawValue)
@@ -113,23 +113,26 @@ struct SettingsPane: View {
     @State private var addingRule = false
 
     var body: some View {
+        @Bindable var recorder = controller.shortcutRecorder
         Form {
-            Section {
-                VStack(spacing: 9) {
-                    if page == .about {
-                        Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 64, height: 64)
-                    } else {
-                        Image(systemName: page.icon)
-                            .font(.system(size: 32, weight: .medium))
-                            .foregroundStyle(.white)
-                            .frame(width: 64, height: 64)
-                            .background(page.tint.gradient, in: .rect(cornerRadius: 15))
+            if page == .general || page == .about {
+                Section {
+                    VStack(spacing: 6) {
+                        if page == .about {
+                            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 48, height: 48)
+                        } else {
+                            Image(systemName: page.icon)
+                                .font(.system(size: 26, weight: .medium))
+                                .foregroundStyle(.white)
+                                .frame(width: 48, height: 48)
+                                .background(page.tint.gradient, in: .rect(cornerRadius: 11))
+                        }
+                        Text(page == .about ? "WindowPilot" : page.rawValue).font(.system(size: 20, weight: .bold))
+                        Text(page.subtitle).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }
-                    Text(page == .about ? "WindowPilot" : page.rawValue).font(.title2.bold())
-                    Text(page.subtitle).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
             }
             switch page {
             case .general: general
@@ -142,9 +145,14 @@ struct SettingsPane: View {
             }
         }
         .formStyle(.grouped)
-        .controlSize(.regular)
+        .contentMargins(.top, 12, for: .scrollContent)
+        .controlSize(.small)
+        .font(.system(size: 13))
         .buttonStyle(.bordered)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(item: $recorder.action, onDismiss: { recorder.stop() }) { action in
+            ShortcutRecordingSheet(recorder: recorder, action: action)
+        }
         .sheet(isPresented: $addingRule) {
             ExclusionRuleEditor(apps: controller.availableApps) { controller.preferences.rules.append($0) }
         }
@@ -153,9 +161,9 @@ struct SettingsPane: View {
     private var general: some View {
         Group {
             Section("启动与外观") {
-                Toggle("启用 ⌘Tab 窗口切换", isOn: Binding(get: { controller.preferences.enabled }, set: { controller.setEnabled($0) }))
-                Toggle("登录时自动启动", isOn: Binding(get: { controller.loginEnabled }, set: { controller.setLogin($0) }))
-                Toggle("更紧凑的行距", isOn: $controller.preferences.compact)
+                Toggle("启用窗口切换", isOn: Binding(get: { controller.preferences.enabled }, set: { controller.setEnabled($0) })).controlSize(.mini)
+                Toggle("登录时自动启动", isOn: Binding(get: { controller.loginEnabled }, set: { controller.setLogin($0) })).controlSize(.mini)
+                Toggle("更紧凑的行距", isOn: $controller.preferences.compact).controlSize(.mini)
                 if controller.loginNeedsApproval {
                     LabeledContent("登录项授权") { SettingsButton("打开系统设置…") { SMAppService.openSystemSettingsLoginItems() } }
                 }
@@ -168,7 +176,7 @@ struct SettingsPane: View {
                 LabeledContent("状态", value: controller.statusText)
                 LabeledContent("预览") { SettingsButton("打开窗口切换器") { controller.begin() }.disabled(!controller.keyboardReady) }
             } footer: {
-                Text("关闭设置后继续在菜单栏运行。松开 ⌘ 切换，按 X 搜索，Esc 取消。")
+                Text("关闭设置后继续在菜单栏运行。使用 \(controller.preferences.shortcuts.allWindows.display) 切换窗口，按 \(controller.preferences.shortcuts.search.display) 搜索。")
             }
         }
     }
@@ -176,9 +184,9 @@ struct SettingsPane: View {
     private var windows: some View {
         Group {
             Section("显示范围") {
-                Toggle("显示最小化窗口", isOn: $controller.preferences.includeMinimized)
-                Toggle("显示隐藏应用", isOn: $controller.preferences.includeHidden)
-                Toggle("显示无窗口的应用", isOn: $controller.preferences.includeWindowless)
+                Toggle("显示最小化窗口", isOn: $controller.preferences.includeMinimized).controlSize(.mini)
+                Toggle("显示隐藏应用", isOn: $controller.preferences.includeHidden).controlSize(.mini)
+                Toggle("显示无窗口的应用", isOn: $controller.preferences.includeWindowless).controlSize(.mini)
             }
             Section {
                 Table(controller.preferences.rules, selection: $selectedRule) {
@@ -204,21 +212,44 @@ struct SettingsPane: View {
     private var shortcuts: some View {
         Group {
             Section {
-                LabeledContent("下一个窗口", value: "⌘ Tab")
-                LabeledContent("上一个窗口", value: "⌘ ⇧ Tab")
-                LabeledContent("关闭选中的窗口（非搜索时）", value: "⌘ W")
-                LabeledContent("退出选中窗口所属应用（非搜索时）", value: "⌘ Q")
-                LabeledContent("确认", value: "松开 ⌘ 或 Return")
-                LabeledContent("取消", value: "Esc")
-                LabeledContent("选择", value: "↑ / ↓")
-                LabeledContent("进入搜索", value: "先按 X，再输入关键词")
-                LabeledContent("搜索时 ⌘W / ⌘Q", value: "输入 w / q")
-            } footer: {
-                Text("搜索不区分大小写，支持不连续字母和多个关键词。按匹配程度排序，并高亮应用名与窗口标题中的命中文字。")
+                shortcutRow(.allWindows)
+                LabeledContent("反向切换", value: controller.preferences.shortcuts.allWindows.reversed.display)
+                Toggle("启用同应用窗口切换", isOn: $controller.preferences.sameAppShortcut).controlSize(.mini)
+                shortcutRow(.appWindows).disabled(!controller.preferences.sameAppShortcut)
+            } header: { Text("全局快捷键") } footer: {
+                Text("点击右侧按键组合进行录制；额外按住 ⇧ 可反向切换。松开切换组合中的修饰键即可确认。")
             }
             Section {
-                Toggle("⌘ ` 切换当前应用的窗口", isOn: $controller.preferences.sameAppShortcut)
+                shortcutRow(.closeWindow)
+                shortcutRow(.quitApplication)
+                shortcutRow(.search)
+            } header: { Text("切换列表内") } footer: {
+                Text("关闭、退出和进入搜索仅在列表内生效。进入搜索后，字母快捷键变为文字输入，不触发窗口操作。")
             }
+            Section {
+                LabeledContent("确认", value: "松开修饰键或 Return")
+                LabeledContent("取消", value: "Esc")
+                LabeledContent("选择", value: "↑ / ↓")
+                LabeledContent("默认按键") {
+                    SettingsButton("恢复默认快捷键") { controller.preferences.shortcuts = ShortcutConfiguration() }
+                        .disabled(controller.preferences.shortcuts == ShortcutConfiguration())
+                }
+            } footer: {
+                Text("搜索忽略大小写，支持不连续字母和多个关键词，并高亮命中文字。")
+            }
+        }
+    }
+
+    private func shortcutRow(_ action: ShortcutAction) -> some View {
+        LabeledContent(action.title) {
+            Button {
+                controller.cancel()
+                controller.shortcutRecorder.begin(action, preferences: controller.preferences)
+            } label: {
+                Text(controller.preferences.shortcuts[action].display).monospaced().frame(minWidth: 76)
+            }
+            .accessibilityLabel("修改" + action.title)
+            .help("点击录制快捷键")
         }
     }
 
@@ -226,7 +257,7 @@ struct SettingsPane: View {
         Group {
             Section {
                 LabeledContent("版本", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版")
-                LabeledContent("开源项目") { Link(destination: URL(string: "https://github.com/luckyyyyy/WindowPilot")!) { Text("GitHub 源码与反馈").frame(minWidth: 112) } }
+                LabeledContent("开源项目") { Link(destination: URL(string: "https://github.com/luckyyyyy/WindowPilot")!) { Text("GitHub 源码与反馈").frame(minWidth: 96) } }
                 LabeledContent("许可证", value: "MIT")
             }
             UpdateSettings()
@@ -245,7 +276,7 @@ struct SettingsButton: View {
     let title: String
     let action: () -> Void
     init(_ title: String, action: @escaping () -> Void) { self.title = title; self.action = action }
-    var body: some View { Button(action: action) { Text(title).frame(minWidth: 112) } }
+    var body: some View { Button(action: action) { Text(title).frame(minWidth: 96) } }
 }
 
 private struct ExclusionRuleEditor: View {
@@ -286,6 +317,34 @@ private struct ExclusionRuleEditor: View {
                 } label: { Text("添加").frame(minWidth: 52) }
                 .keyboardShortcut(.defaultAction).disabled(selected == nil || !patternValid)
             }
-        }.controlSize(.regular).buttonStyle(.bordered).padding(20).frame(width: 380)
+        }.controlSize(.small).font(.system(size: 13)).buttonStyle(.bordered).padding(20).frame(width: 380)
+    }
+}
+
+private struct ShortcutRecordingSheet: View {
+    @Bindable var recorder: ShortcutRecorder
+    let action: ShortcutAction
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(action.title).font(.headline)
+            Text("请按下新的按键组合").foregroundStyle(.secondary)
+            Text(recorder.candidate?.display ?? "等待输入…")
+                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .frame(maxWidth: .infinity, minHeight: 46)
+            if let error = recorder.error {
+                Text(error).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(action.isGlobal ? "需包含 ⌘、⌥ 或 ⌃；⇧ 留给反向切换。" : "仅在窗口切换列表内生效。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            HStack {
+                Spacer()
+                Button { recorder.stop() } label: { Text("取消").frame(minWidth: 52) }
+                Button { recorder.save() } label: { Text("保存").frame(minWidth: 52) }
+                    .disabled(recorder.candidate == nil)
+            }
+        }
+        .padding(20).frame(width: 340).font(.system(size: 13))
+        .controlSize(.small).buttonStyle(.bordered)
     }
 }

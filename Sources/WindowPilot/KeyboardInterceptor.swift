@@ -57,10 +57,11 @@ final class KeyboardInterceptor {
             return Unmanaged.passUnretained(event)
         }
         guard let controller else { return Unmanaged.passUnretained(event) }
+        if controller.shortcutRecorder.handle(type, event) { return nil }
         let code = event.getIntegerValueField(.keyboardEventKeycode)
         if type == .keyUp, swallowedKeys.remove(code) != nil { actionKeys.remove(code); return nil }
         if type == .flagsChanged {
-            if controller.presented && controller.heldCommand && !event.flags.contains(.maskCommand) { controller.commandReleased() }
+            if controller.presented && controller.heldCommand && event.flags.intersection(controller.heldModifiers) != controller.heldModifiers { controller.commandReleased() }
             return Unmanaged.passUnretained(event)
         }
         if type == .leftMouseDown || type == .rightMouseDown {
@@ -72,12 +73,20 @@ final class KeyboardInterceptor {
         // Otherwise keyboard auto-repeat could close an unrelated foreground window.
         if event.getIntegerValueField(.keyboardEventAutorepeat) != 0 && swallowedKeys.contains(code)
             && actionKeys.contains(code) { return nil }
-        let command = event.flags.contains(.maskCommand)
-        let reverse = event.flags.contains(.maskShift)
-        let shortcut = command && !event.flags.contains(.maskAlternate) && !event.flags.contains(.maskControl)
-        if shortcut && (code == 48 || (code == 50 && controller.preferences.sameAppShortcut)) && controller.preferences.enabled {
+        let shortcuts = controller.preferences.shortcuts
+        let globalAction = [ShortcutAction.allWindows, .appWindows].first { action in
+            if action == .appWindows && !controller.preferences.sameAppShortcut { return false }
+            let binding = shortcuts[action]
+            // Printable keys remain text once search has started.
+            if controller.searching && ShortcutBinding.specialKeys[binding.keyCode] == nil { return false }
+            return binding.matches(event) || binding.reversed.matches(event)
+        }
+        if let globalAction, controller.preferences.enabled {
+            let binding = shortcuts[globalAction]
+            let reverse = binding.reversed.matches(event)
             if !controller.presented {
-                guard controller.begin(sameApp: code == 50, reverse: reverse, heldCommand: true) else {
+                controller.heldModifiers = binding.flags
+                guard controller.begin(sameApp: globalAction == .appWindows, reverse: reverse, heldCommand: true) else {
                     return Unmanaged.passUnretained(event)
                 }
             } else { controller.move(reverse ? -1 : 1) }
@@ -85,12 +94,21 @@ final class KeyboardInterceptor {
             return nil
         }
         guard controller.presented else { return Unmanaged.passUnretained(event) }
-        if !controller.searching, let action = SelectedWindowAction.match(event) {
-            let firstPress = !swallowedKeys.contains(code) && event.getIntegerValueField(.keyboardEventAutorepeat) == 0
-            swallowedKeys.insert(code)
-            actionKeys.insert(code)
-            if firstPress { controller.performSelectedAction(action) }
-            return nil
+        let held = controller.heldCommand ? controller.heldModifiers : CGEventFlags.maskCommand
+        if !controller.searching {
+            let action = SelectedWindowAction.match(event, configuration: shortcuts, ignoring: held)
+            if let action {
+                let firstPress = !swallowedKeys.contains(code) && event.getIntegerValueField(.keyboardEventAutorepeat) == 0
+                swallowedKeys.insert(code)
+                actionKeys.insert(code)
+                if firstPress { controller.performSelectedAction(action) }
+                return nil
+            }
+            if shortcuts.search.matches(event, ignoring: held.union(.maskShift)) {
+                controller.beginSearch()
+                swallowedKeys.insert(code)
+                return nil
+            }
         }
         switch code {
         case 53: controller.cancel()
@@ -105,9 +123,6 @@ final class KeyboardInterceptor {
                 if controller.searching {
                     // Command can remain held while searching; Q/W are text here.
                     controller.appendQuery(characters)
-                } else if characters.lowercased() == "x",
-                          event.flags.intersection([.maskAlternate, .maskControl]).isEmpty {
-                    controller.beginSearch()
                 }
             } else {
                 // Let unrelated shortcuts through after dismissing the switcher.

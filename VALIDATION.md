@@ -1,7 +1,13 @@
 # Validation
 
-Version 1.4.4: 43 tests passed locally with Thread Sanitizer (34 core/input/search tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
+Version 1.5.0: 51 tests passed locally with Thread Sanitizer (42 core/input/search/shortcut tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
 
+
+## Configurable shortcuts and native proportions, 1.5.0
+
+Eight new cases verify preference migration and persistence, restoring defaults without resetting unrelated settings, rejecting invalid saved configurations and overlapping bindings, custom action modifiers and keyboard-layout characters, recording without triggering the switcher, explicit Save versus Escape cancellation, focus-loss cancellation, modifier-release confirmation after switching from Command to Option, and search text taking priority over printable shortcuts.
+
+A signed development build was exercised through its actual settings: recorded and saved Option-Tab; attempted Command-Q for search and saw the conflict with Quit plus disabled Save; cancelled with Escape; and restored defaults. No user windows were closed by this test. Settings proportions were compared with macOS System Settings: native mini switches, small buttons with 13-point labels, 20-point sidebar icons and compact sidebar rows. No scaled custom switch drawing is used.
 
 ## Fuzzy search, 1.4.4
 

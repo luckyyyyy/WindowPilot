@@ -45,3 +45,9 @@ Each switcher session starts in window-action mode. X enters explicit search mod
 `WindowSearch` independently implements ordered subsequence scoring inspired by [VS Code completion](https://github.com/microsoft/vscode/blob/main/src/vs/base/common/filters.ts). Exact, prefix and whole contiguous matches receive bonuses; word/camel-case boundaries, consecutive characters and gaps contribute to the best alignment. Query case does not affect results or scores. Space-separated terms may match different visible fields; bundle IDs are not searched. Equal scores preserve frozen session order.
 
 Unicode case/diacritic/width folding retains a map to original grapheme positions, including expansions. Scores and highlight positions are returned together. `SwitcherController` caches results until query or session items change, so navigation and drawing do not rerun matching. SwiftUI attributed text styles only the original matched graphemes, without inserting spaces or changing accessibility labels.
+
+## Configurable shortcuts
+
+`ShortcutConfiguration` persists five bindings with defaults for older installs. Invalid stored data falls back to defaults. Printable bindings use keyboard-layout characters; special keys use key codes. Global bindings require Command, Option or Control, reserving Shift for reverse cycling. The triggering modifier set is captured for release confirmation and the watchdog; local actions tolerate the held switching modifiers. Search takes precedence over printable bindings.
+
+`ShortcutRecorder` consumes keyboard events before the switcher during a native recording sheet, with a local monitor fallback when AX access is unavailable. Changes are staged until Save; Escape, Cancel and app deactivation discard the candidate. Internal overlapping bindings and list navigation keys are rejected. This does not detect every shortcut registered by other apps or customized in macOS.
