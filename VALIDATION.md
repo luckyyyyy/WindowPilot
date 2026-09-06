@@ -9,6 +9,8 @@ Eight new cases verify preference migration and persistence, restoring defaults 
 
 A signed development build was exercised through its actual settings: recorded and saved Option-Tab; attempted Command-Q for search and saw the conflict with Quit plus disabled Save; cancelled with Escape; and restored defaults. No user windows were closed by this test. Settings proportions were compared with macOS System Settings: native mini switches, small buttons with 13-point labels, 20-point sidebar icons and compact sidebar rows. No scaled custom switch drawing is used.
 
+The final mini switches were inspected on General, Windows and About alongside macOS System Settings; the rule editor's native fields and paired buttons were also checked and cancelled. Production Sparkle then updated `/Applications/WindowPilot.app` from 1.4.4 to 1.5.0. The installed executable matches the published build, nested signatures and the stapled ticket validate, and accessibility/login/compact settings remain enabled. Shortcut defaults were restored after testing. Release commit `880874b` passed CI run `34004617038`.
+
 ## Fuzzy search, 1.4.4
 
 Eight new cases cover ordered subsequences (`ws` → `watchOptions`), case-invariant scores/order, exact/prefix/contiguous ranking, better alignments after an early weak match, multiword matches across visible fields, stable session-order ties, Unicode folding and original grapheme offsets, attributed-text preservation, cache invalidation after query/title changes, and long or impossible queries. The existing X-prefix and Q/W action-isolation tests also pass with fuzzy results.
