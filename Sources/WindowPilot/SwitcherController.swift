@@ -9,9 +9,9 @@ final class SwitcherController {
     static let shared = SwitcherController()
     var preferences = Preferences()
     var items: [WindowItem] = []
-    var sessionItems: [WindowItem] = []
+    var sessionItems: [WindowItem] = [] { didSet { cachedSearch = nil } }
     var selectedIndex = 0
-    var query = ""
+    var query = "" { didSet { cachedSearch = nil } }
     private(set) var searching = false
     var presented = false
     var heldCommand = false
@@ -40,7 +40,17 @@ final class SwitcherController {
     @ObservationIgnored private var pendingScan: ScanScope?
     @ObservationIgnored private var generation = 0
 
-    var filteredItems: [WindowItem] { WindowOrdering.filter(sessionItems, query: query) }
+    @ObservationIgnored private var cachedSearch: [WindowSearchResult]?
+    var searchResults: [WindowSearchResult] {
+        // Read observed inputs even on cache hits so SwiftUI keeps tracking them.
+        let items = sessionItems
+        let text = query
+        if let cachedSearch { return cachedSearch }
+        let results = WindowSearch.results(items, query: text)
+        cachedSearch = results
+        return results
+    }
+    var filteredItems: [WindowItem] { searchResults.map(\.item) }
     var selected: WindowItem? {
         let filtered = filteredItems
         return filtered.indices.contains(selectedIndex) ? filtered[selectedIndex] : nil

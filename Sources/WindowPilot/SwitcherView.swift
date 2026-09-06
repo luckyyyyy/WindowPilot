@@ -62,9 +62,9 @@ struct SwitcherView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(Array(controller.filteredItems.enumerated()), id: \.element.id) { index, item in
-                                Button { controller.select(item) } label: { row(item, selected: index == controller.selectedIndex) }
-                                    .buttonStyle(.plain).help(item.title).id(item.id)
+                            ForEach(Array(controller.searchResults.enumerated()), id: \.element.id) { index, result in
+                                Button { controller.select(result.item) } label: { row(result, selected: index == controller.selectedIndex) }
+                                    .buttonStyle(.plain).help(result.item.title).id(result.id)
                             }
                             if controller.filteredItems.isEmpty {
                                 Text("没有匹配的窗口").font(.system(size: 13)).foregroundStyle(.secondary)
@@ -99,14 +99,15 @@ struct SwitcherView: View {
         .environment(\.colorScheme, .dark)
     }
 
-    private func row(_ item: WindowItem, selected: Bool) -> some View {
-        HStack(spacing: 9) {
+    private func row(_ result: WindowSearchResult, selected: Bool) -> some View {
+        let item = result.item
+        return HStack(spacing: 9) {
             Text(item.initial).font(.system(size: 12))
                 .foregroundStyle(selected ? .white.opacity(0.65) : .secondary).frame(width: 12)
-            Text(item.appName).font(.system(size: 13))
+            Text(SearchHighlight.text(item.appName, positions: result.appPositions, selected: selected)).font(.system(size: 13))
                 .lineLimit(1).frame(width: 145, alignment: .trailing)
             Image(nsImage: controller.icon(for: item)).resizable().interpolation(.high).frame(width: 23, height: 23)
-            Text(item.title).font(.system(size: 14, weight: .medium))
+            Text(SearchHighlight.text(item.title, positions: result.titlePositions, selected: selected)).font(.system(size: 14, weight: .medium))
                 .lineLimit(1).truncationMode(.middle).frame(maxWidth: .infinity, alignment: .leading)
             if item.minimized {
                 Image(systemName: "minus.rectangle").font(.system(size: 11)).help("已最小化 · 选中后恢复")
@@ -122,5 +123,24 @@ struct SwitcherView: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
+    }
+}
+
+/// Build attributes against original graphemes, including emoji and composed accents.
+enum SearchHighlight {
+    static func text(_ text: String, positions: Set<Int>, selected: Bool) -> AttributedString {
+        var value = AttributedString(text)
+        var index = value.characters.startIndex
+        for offset in 0..<text.count {
+            let next = value.characters.index(after: index)
+            if positions.contains(offset) {
+                value[index..<next].foregroundColor = selected
+                    ? Color(red: 0.72, green: 0.94, blue: 1) : .cyan
+                value[index..<next].inlinePresentationIntent = .stronglyEmphasized
+                value[index..<next].underlineStyle = .single
+            }
+            index = next
+        }
+        return value
     }
 }

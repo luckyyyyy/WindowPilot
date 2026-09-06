@@ -39,3 +39,9 @@ The nonactivating switcher does not guarantee cooperative app activation. `Local
 ### Search input mode
 
 Each switcher session starts in window-action mode. X enters explicit search mode, including when Command is still held. Search mode consumes Q/W as text before shortcut dispatch; the controller also rejects selected-window actions while searching. Emptying the query keeps this mode active. Cancelling/committing resets it for the next session. The panel header and its height follow the mode flag, so the input prompt is visible before any query text is typed.
+
+## Fuzzy search and highlights
+
+`WindowSearch` independently implements ordered subsequence scoring inspired by [VS Code completion](https://github.com/microsoft/vscode/blob/main/src/vs/base/common/filters.ts). Exact, prefix and whole contiguous matches receive bonuses; word/camel-case boundaries, consecutive characters and gaps contribute to the best alignment. Query case does not affect results or scores. Space-separated terms may match different visible fields; bundle IDs are not searched. Equal scores preserve frozen session order.
+
+Unicode case/diacritic/width folding retains a map to original grapheme positions, including expansions. Scores and highlight positions are returned together. `SwitcherController` caches results until query or session items change, so navigation and drawing do not rerun matching. SwiftUI attributed text styles only the original matched graphemes, without inserting spaces or changing accessibility labels.

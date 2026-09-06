@@ -13,7 +13,6 @@ struct WindowItem: Identifiable, Sendable, Equatable {
     let focused: Bool
     let lastUsed: UInt64
 
-    var searchText: String { "\(appName) \(title) \(bundleID)" }
     var initial: String { String(appName.prefix(1)).lowercased() }
 }
 
@@ -50,10 +49,7 @@ enum WindowOrdering {
     }
 
     static func filter(_ items: [WindowItem], query: String) -> [WindowItem] {
-        let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
-        return items.filter { item in
-            words.allSatisfy { item.searchText.localizedStandardContains($0) }
-        }
+        WindowSearch.results(items, query: query).map(\.item)
     }
 
     static func nextIndex(_ current: Int, count: Int, delta: Int) -> Int {

@@ -213,6 +213,8 @@ struct SettingsPane: View {
                 LabeledContent("选择", value: "↑ / ↓")
                 LabeledContent("进入搜索", value: "先按 X，再输入关键词")
                 LabeledContent("搜索时 ⌘W / ⌘Q", value: "输入 w / q")
+            } footer: {
+                Text("搜索不区分大小写，支持不连续字母和多个关键词。按匹配程度排序，并高亮应用名与窗口标题中的命中文字。")
             }
             Section {
                 Toggle("⌘ ` 切换当前应用的窗口", isOn: $controller.preferences.sameAppShortcut)
