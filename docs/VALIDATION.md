@@ -11,6 +11,12 @@ The preview shares the shipping surface and rows and uses a safe striped gradien
 ![Native glass surface in Aqua; isolated window capture](images/glass-preview-light.png)
 ![Native glass surface in Dark Aqua; isolated window capture](images/glass-preview-dark.png)
 
+Source commit `c58c665` passed GitHub Actions run `34043947024`. Apple accepted the app (`a140b537-e3e0-43d6-b316-dacd644d3e8c`) and DMG (`14198f3e-0cbb-4f90-b1f6-34002e15c5b9`); strict signatures, stapled tickets and Gatekeeper assessments pass. The mounted DMG contains 1.5.2 (16), both architectures and the exact built executable. Feed metadata and EdDSA signatures verify for the staged artifacts.
+
+The notarized app was installed directly into `/Applications/WindowPilot.app` and relaunched; its executable hash matches the build. The prior notarized 1.5.1 app is retained under the ignored `.build/updater-bootstrap/` directory. Installed settings showed System by default, Accessibility authorized, keyboard switching ready, and login startup / compact rows still enabled. Selecting Dark, Light, then System visibly updated settings immediately; System was left selected and its saved value verified. Opening the installed switcher and cancelling with Escape worked. This was a local bundle upgrade, **not** a production Sparkle update test, and these staged 1.5.2 artifacts have not been published to GitHub Releases.
+
+![Installed appearance control restored to System](images/appearance-settings.png)
+
 Version 1.5.1: 51 tests passed locally with Thread Sanitizer (42 core/input/search/shortcut tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
 
 
