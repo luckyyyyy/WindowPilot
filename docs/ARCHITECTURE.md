@@ -1,20 +1,19 @@
 # Architecture
 
-WindowPilot uses public macOS APIs and has no runtime package dependencies.
+WindowPilot uses public macOS APIs, with Sparkle as its only package dependency for updates.
 
-| File | Responsibility |
+Source files under `Sources/WindowPilot/` are grouped by responsibility. Swift Package Manager discovers these subdirectories automatically; they remain one executable module.
+
+| Directory | Responsibility |
 | --- | --- |
-| `WindowCatalog.swift` | Remote AX window handles, background scan queue, independent interactive action queue |
-| `ScanPolicy.swift` | Helper-process filtering, timeout backoff, merging incremental refresh requests |
-| `WindowPolicy.swift` | Window roles, layers and title fallback |
-| `LocalWindows.swift` | MainActor AppKit operations on WindowPilot's own windows |
-| `SwitcherController.swift` | Cached list, selection session, permissions and activation |
-| `KeyboardInterceptor.swift` | Global event tap and local key handling |
-| `SelectedWindowAction.swift` | Selected-window close/quit key matching |
-| `SwitcherView.swift` | Nonactivating panel and compact searchable rows |
-| `SwitcherLayout.swift` | Content height including search/empty state, capped at 80% of the current display’s usable height |
-| `SettingsView.swift` | Native NavigationSplitView, grouped forms and exclusion editor |
-| `Models.swift` | Ordering, filtering and persistent preferences |
+| `App/` | Application lifecycle, menu bar and Sparkle updates |
+| `Windows/` | Window models/ordering, remote AX catalog, scan policy, local AppKit operations |
+| `Switcher/` | Selection session, fuzzy search, panel sizing, row rendering and text highlights |
+| `Input/` | Global/local keyboard interception, shortcut configuration/recording and selected-window actions |
+| `Settings/` | Native settings UI, persistent preferences and exclusion rules |
+| `Diagnostics/` | Optional switch/scan timing traces |
+
+`SwitcherPanel` owns the native nonactivating panel; `SwitcherView` arranges search and scrolling; `SwitcherRow` owns pointer feedback. Hover paints an unselected row with translucent neutral white on the dark panel. Keyboard selection takes visual priority and keeps the system selection color. Hover does not alter the selected index or commit a window switch; clicking retains the existing selection action. Each row owns its hover state and clears it when removed from view.
 
 The scan queue publishes immutable remote-window handle snapshots under a short-lived mutex. No IPC runs while holding that lock. Restore, raise and close run on a separate interaction queue, so a slow scan cannot delay a selected action. Recent-use mutations return to the scan queue.
 
@@ -24,7 +23,7 @@ Own-process AX operations are rejected at the catalog boundary. `LocalWindows` r
 
 Close uses the target's AX close button; quit requests normal NSRunningApplication termination. Neither force-quits an app. If an application shows a save confirmation or refuses an action, the switcher dismisses and activates it for the user to decide.
 
-The default app does not log window titles or send network requests. Optional `--trace-switches /absolute/path/trace.log` records monotonic action/scan timings without titles. Timings describe API completion, not measured display latency.
+The default app does not log window titles. Its only network feature is the Sparkle update check described below. Optional `--trace-switches /absolute/path/trace.log` records monotonic action/scan timings without titles. Timings describe API completion, not measured display latency.
 
 ## Updates
 

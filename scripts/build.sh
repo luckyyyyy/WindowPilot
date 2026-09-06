@@ -60,6 +60,8 @@ else
 fi
 codesign --verify --deep --strict "$APP"
 mkdir -p dist
+# Replace the generated bundle so removed resources cannot survive a rebuild.
+rm -rf dist/WindowPilot.app
 ditto --norsrc --noextattr "$APP" dist/WindowPilot.app
 ditto -c -k --sequesterRsrc --keepParent "$APP" dist/WindowPilot.zip
 printf 'Built: %s\n' "$PROJECT_DIR/dist/WindowPilot.app"

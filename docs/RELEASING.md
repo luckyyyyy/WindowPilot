@@ -1,69 +1,59 @@
 # Release builds
 
-CI produces universal, ad-hoc signed development artifacts. Public releases are built locally with a Developer ID Application certificate, notarized through the signed-in Xcode account, then packaged in a signed DMG. No signing private keys are stored in this repository or required by CI.
+CI produces universal, ad-hoc signed development artifacts. Public releases are built locally with a Developer ID Application certificate. Both the app and final signed DMG are notarized using a notarytool Keychain profile. No signing private keys are stored in this repository or required by CI.
 
-## Sign and notarize the application
+## Signing setup
 
-In Xcode → Settings → Apple Accounts, choose the publishing team and create or install a Developer ID Application certificate with its private key. Preserve existing certificates used by other apps. Set your own identity and team ID:
+In Xcode → Settings → Apple Accounts, choose the publishing team and create or install a Developer ID Application certificate with its private key. Preserve existing certificates used by other apps. Set the signing identity and, if necessary, configure the notarytool profile interactively:
 
 ```sh
 export WINDOWPILOT_SIGN_IDENTITY='Developer ID Application: YOUR COMPANY (TEAMID)'
-export WINDOWPILOT_TEAM_ID='TEAMID'
+# One-time setup only, if the profile does not already exist:
+xcrun notarytool store-credentials WindowPilot-notary
+```
+
+The default profile is `WindowPilot-notary`; override it with `WINDOWPILOT_NOTARY_PROFILE`. Never put passwords, app-specific passwords, API keys or certificate exports into scripts, commits, issue comments or release assets.
+
+## Build and notarize
+
+Update both version fields in `Resources/Info.plist`, write release notes, then run:
+
+```sh
 ./scripts/test.sh
 ./scripts/build.sh --universal
-./scripts/notarize-xcode.sh submit
-```
-
-Once Apple finishes processing (check Xcode Organizer if needed):
-
-```sh
-./scripts/notarize-xcode.sh export
+./scripts/release/notarize.sh app
 ./scripts/build-dmg.sh
-xcrun stapler validate dist/WindowPilot.app
-spctl --assess --type execute --verbose=2 dist/WindowPilot.app
-codesign --verify --verbose=2 dist/WindowPilot.dmg
+./scripts/release/notarize.sh dmg
 ```
 
-The script uses `xcodebuild -exportArchive` with Developer ID upload, then `-exportNotarizedApp`. It does not extract account passwords or export private keys. `dist/WindowPilot.zip` and the DMG contain the stapled application. Preserve or move the previous `.xcarchive` before submitting a new build.
+The app step creates the upload ZIP from the exact built app, waits for Apple, staples the app and recreates the ZIP with its offline ticket. The DMG step submits and staples the final signed image. Both steps verify Gatekeeper acceptance. If Apple processing is interrupted, inspect the submission status before retrying. Do not rebuild or alter a notarized app without resubmitting it.
 
-## Notarize the final DMG
+Sparkle 2.9.6 is pinned by `Package.resolved`. The build script embeds its universal framework, preserves symlinks, signs nested helpers inside out and includes the upstream license. Release apps keep hardened runtime and library validation. Ad-hoc CI apps omit hardened runtime because they have no Team ID for library validation.
 
-The outer signed DMG also needs notarization. Do not treat a successful assessment of the contained application as approval of the DMG. Configure an Apple notarytool Keychain profile interactively, then submit and staple the final image:
+## Sign and validate the update feed
+
+The public EdDSA key is in `Resources/Info.plist`. The private key remains in the local login Keychain under account `WindowPilot-G89F9A6472`. Never export it into CI or the repository. Forks must generate their own key and change the feed URL and signing account.
 
 ```sh
-xcrun notarytool store-credentials WindowPilot-notary
-./scripts/notarize-dmg.sh
+./scripts/release/generate-appcast.sh dist/release-notes.md
+(cd dist && shasum -a 256 -c SHA256SUMS)
 ```
 
-Never put passwords, app-specific passwords, API keys or certificate exports into scripts, commits, issue comments or release assets.
+The generator uses Sparkle's official tooling, verifies signed XML and DMG with CryptoKit using the embedded public key, and checks version, build, system requirement, length and versioned download URL. It creates `SHA256SUMS` for the final DMG, ZIP and signed appcast together. Do not edit XML or payloads after signing.
 
-## Sign the GitHub update feed
+## Publish and update the local app
 
-Sparkle 2.9.6 is pinned by `Package.resolved`. The build script embeds its universal framework, preserves symlinks, signs its nested helpers inside out, and includes the upstream license. Release apps keep hardened runtime and library validation. Ad-hoc CI apps omit hardened runtime because they have no Team ID for library validation.
-
-The public EdDSA key is in `Resources/Info.plist`. The private key is kept only in the local login Keychain under account `WindowPilot-G89F9A6472`. Never export it into CI or the repository. Forks must generate their own key and change both the feed URL and signing account.
-
-After notarizing and stapling the final DMG, generate and validate the feed:
+Inspect screenshots for private window titles. Mount the final DMG and check its contained app's version, both architectures, strict signature, stapled ticket and Gatekeeper assessment. Commit the exact source and wait for green CI before publishing.
 
 ```sh
-./scripts/generate-appcast.sh release-notes.md
-(cd dist && shasum -a 256 WindowPilot.dmg WindowPilot.zip appcast.xml > SHA256SUMS)
-```
-
-The script uses Sparkle's official generator and verifies its signed XML and DMG with CryptoKit using only the embedded public key. It also checks version, build number, system requirement, archive length, signature presence and version-specific download URL. Do not edit the generated XML without re-signing it. Upload `appcast.xml` and its exact final DMG together to a draft release, then publish it as latest. The application's feed URL is `https://github.com/luckyyyyy/WindowPilot/releases/latest/download/appcast.xml`. Never mark a release latest without its feed asset; never replace a release payload after signing its feed.
-
-Before publication, test an updater-enabled older build against the new release, including downloading, installing, relaunching, version change and Accessibility trust. For a draft release this requires publishing the complete assets before checking through the production feed. A manual file copy does not count as an update test. Retain a notarized bootstrap app locally for future regression checks.
-
-## Publish
-
-Inspect screenshots for private window titles. Check the app inside the mounted DMG, its architectures, stapled ticket, and Gatekeeper assessment. Confirm that its version matches `Resources/Info.plist`, commit the exact source, and wait for a green CI run.
-
-```sh
-(cd dist && shasum -a 256 WindowPilot.dmg WindowPilot.zip > SHA256SUMS)
 git tag vVERSION
 git push origin vVERSION
 gh release create vVERSION dist/WindowPilot.dmg dist/WindowPilot.zip dist/appcast.xml dist/SHA256SUMS \
-  --title 'WindowPilot VERSION' --notes-file release-notes.md
+  --draft --title 'WindowPilot VERSION' --notes-file dist/release-notes.md
+# Check that all four assets are present, then publish the complete release:
+gh release edit vVERSION --draft=false --latest
 ```
 
-Do not rebuild the app after notarizing it without resubmitting the changed build. CI artifacts must never overwrite the signed release assets.
+The stable feed is `https://github.com/luckyyyyy/WindowPilot/releases/latest/download/appcast.xml`. Never mark a release latest without its feed asset, and never replace a payload after signing its feed. CI artifacts must not overwrite signed release assets.
+
+After publishing the complete assets, use an installed updater-enabled older build to check the production feed, download, install and relaunch. Verify the version, executable hash and Accessibility trust. A manual file copy does not count as an updater test. Preserve user settings and retain a notarized bootstrap app locally for future regression checks. Record actual verification in [VALIDATION.md](VALIDATION.md).

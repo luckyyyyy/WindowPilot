@@ -1,7 +1,17 @@
 # Validation
 
-Version 1.5.0: 51 tests passed locally with Thread Sanitizer (42 core/input/search/shortcut tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
+Version 1.5.1: 51 tests passed locally with Thread Sanitizer (42 core/input/search/shortcut tests and 9 native-window cases). `scripts/test.sh` isolates each AppKit lifecycle case in a fresh process and requires a complete test summary; an early exit without test completion fails the run.
 
+
+## Directory cleanup and pointer feedback, 1.5.1
+
+Source files are now grouped by responsibility and the mixed `Models.swift` has been separated into window models/ordering and settings preferences/rules. Panel, row rendering and search highlighting have dedicated files. Build/test entry points remain stable; release, DMG, asset-generation and test-fixture helpers have dedicated directories. The old Xcode notarization flow is replaced by one Keychain-backed notarytool entry point for app and DMG. Feed generation cleans its temporary directory and writes one checksum manifest after signing all assets; rebuilding removes the previous generated bundle before copying the new one.
+
+All 51 tests pass with Thread Sanitizer after the moves. Shell entry points pass syntax validation. The independent row preview uses the shipping `SwitcherRow` with sample titles and was inspected in Aqua and Dark Aqua: row spacing, selected color and labels remain intact. The switcher itself retains its dark appearance in both modes.
+
+Hover is row-local, uses 10% neutral white over the dark background, resets on disappearance and never changes keyboard selection. Selected rows keep the system selection color. The panel explicitly accepts mouse movement. The native automation host delivered synthetic mouseMoved events but did not produce SwiftUI tracking callbacks, so this is **not** evidence of physical pointer enter/exit behavior; that interaction remains a manual verification item.
+
+![Shipping rows in the isolated dark preview; keyboard selection shown](images/row-preview-dark.png)
 
 ## Configurable shortcuts and native proportions, 1.5.0
 
@@ -46,7 +56,7 @@ Verified with the production GitHub Releases feed and Developer ID signed, notar
 
 The release feed and DMG were independently verified using CryptoKit and the embedded public key. Disposable tampering tests rejected a modified feed and modified payload. Signed production artifacts and the exact feed are hosted together in release `v1.4.1`; release code passed GitHub Actions run `33952887996`.
 
-![Automatically downloaded update ready for installation](docs/images/updater.png)
+![Automatically downloaded update ready for installation](images/updater.png)
 
 The dynamic-height update was checked with 35 disposable fixture windows (`--window-count 35`). On a display with a 1410-point usable height, the overflowing panel stopped at 1128 points (80%). Filtering to 35 rows expanded to 1024 points without a scrollbar; narrowing to 9 results used 296 points, closing a selected fixture window shrank it to 268 points, and an empty search used 88 points. Deleting the unmatched query restored the list. The fixture was then quit through the selected-app action.
 
@@ -54,7 +64,7 @@ Automated tests cover ordering and Unicode search, window-role filtering, indepe
 
 The local-window regression suite repeatedly restores native windows and checks that background AX operations reject the application's own PID. The latency regression deliberately blocks the scanner and verifies that interactive actions can complete independently. Tests do not require Accessibility permission or manipulate user documents.
 
-Manual development checks use the isolated `scripts/WindowFixture.swift` application: a document NSWindow, an independent settings NSPanel, a title-change button and optional save/cancel dialogs. Previous checks verified minimized-window restoration, independent settings visibility, title refresh, targeted close/quit and cancel handling.
+Manual development checks use the isolated `scripts/testing/WindowFixture.swift` application: a document NSWindow, an independent settings NSPanel, a title-change button and optional save/cancel dialogs. Previous checks verified minimized-window restoration, independent settings visibility, title refresh, targeted close/quit and cancel handling.
 
 A development-machine sample measured full scans around 54 ms and single-app incremental scans around 9 ms after removing repeated timeouts against windowless helpers. These are workload-specific API timings, not a performance guarantee or display-frame measurement. Native minimization animations still apply.
 

@@ -11,14 +11,14 @@ if [[ ! -x .build/dmg-tools/bin/dmgbuild ]]; then
     else echo 'Python 3.10+ is required. Set WINDOWPILOT_PYTHON to its path.' >&2; exit 1; fi
   fi
   "$PYTHON" -m venv --clear .build/dmg-tools
-  .build/dmg-tools/bin/python -m pip install --disable-pip-version-check -r scripts/dmg-requirements.txt
+  .build/dmg-tools/bin/python -m pip install --disable-pip-version-check -r scripts/dmg/dmg-requirements.txt
 fi
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/windowpilot-dmg.XXXXXX")"
 trap 'rm -rf "$STAGING_DIR"' EXIT
 ditto --norsrc --noextattr dist/WindowPilot.app "$STAGING_DIR/WindowPilot.app"
 codesign --verify --deep --strict "$STAGING_DIR/WindowPilot.app"
-swift scripts/make-dmg-background.swift "$PROJECT_DIR/dist/dmg-background.tiff"
-.build/dmg-tools/bin/dmgbuild -s scripts/dmg-settings.py -D app="$STAGING_DIR/WindowPilot.app" WindowPilot dist/WindowPilot.dmg
+swift scripts/dmg/make-dmg-background.swift "$PROJECT_DIR/dist/dmg-background.tiff"
+.build/dmg-tools/bin/dmgbuild -s scripts/dmg/dmg-settings.py -D app="$STAGING_DIR/WindowPilot.app" WindowPilot dist/WindowPilot.dmg
 if [[ -n "${WINDOWPILOT_SIGN_IDENTITY:-}" && "$WINDOWPILOT_SIGN_IDENTITY" != '-' ]]; then
   codesign --force --timestamp --sign "$WINDOWPILOT_SIGN_IDENTITY" dist/WindowPilot.dmg
 fi
