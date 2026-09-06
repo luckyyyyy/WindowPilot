@@ -9,6 +9,8 @@ Eight new cases cover ordered subsequences (`ws` → `watchOptions`), case-invar
 
 An optimized local benchmark of 200 synthetic windows with mixed English/Chinese titles completed 20 uncached searches in 143 ms (about 7 ms per search). This measures matching only, not a display-frame or third-party-window timing guarantee; navigation uses cached results.
 
+Live UI verification after the production Sparkle update from 1.4.3 to 1.4.4: a disposable `watchOptions` window appears for `ws`; the original `w` and `s` are highlighted on both selected and unselected rows. Replacing the query with `WS` preserves the same result order. The installed executable matches the released executable, its nested signature and stapled ticket validate, and Accessibility remains authorized. The fixture was closed after testing. Release commit `934fe79` passed GitHub Actions run `34003449899`.
+
 ## Explicit search mode, 1.4.3
 
 Regression tests send paired key-down/key-up events through the real `KeyboardInterceptor.handle` entry point. They verify: ordinary letters do not start searching; X enters search without entering the prefix into the query; `xq` matches QQ while Command remains held; Q/W/X input works with and without Command; deleting the last character keeps search mode active and window actions disabled; Escape clears both query and mode; and navigation preserves search. The empty search header is driven by mode rather than non-empty query. Existing selected-window action tests continue to cover normal-mode Cmd-W and modifier matching for Cmd-Q.
