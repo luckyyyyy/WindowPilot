@@ -6,8 +6,8 @@ case "${1:-}" in
   app)
     APP=dist/WindowPilot.app
     codesign --verify --deep --strict "$APP"
-    codesign -dv "$APP" 2>&1 | grep 'Authority=Developer ID Application:' > /dev/null
-    codesign -dv "$APP" 2>&1 | grep 'flags=.*runtime' > /dev/null
+    codesign -dvv "$APP" 2>&1 | grep 'Authority=Developer ID Application:' > /dev/null
+    codesign -dvv "$APP" 2>&1 | grep 'flags=.*runtime' > /dev/null
     # Recreate the upload from this exact app, never a stale build ZIP.
     ditto -c -k --sequesterRsrc --keepParent "$APP" dist/WindowPilot.zip
     xcrun notarytool submit dist/WindowPilot.zip --keychain-profile "$PROFILE" --wait
@@ -18,7 +18,7 @@ case "${1:-}" in
     ;;
   dmg)
     codesign --verify --verbose=2 dist/WindowPilot.dmg
-    codesign -dv dist/WindowPilot.dmg 2>&1 | grep 'Authority=Developer ID Application:' > /dev/null
+    codesign -dvv dist/WindowPilot.dmg 2>&1 | grep 'Authority=Developer ID Application:' > /dev/null
     xcrun notarytool submit dist/WindowPilot.dmg --keychain-profile "$PROFILE" --wait
     xcrun stapler staple dist/WindowPilot.dmg
     xcrun stapler validate dist/WindowPilot.dmg
