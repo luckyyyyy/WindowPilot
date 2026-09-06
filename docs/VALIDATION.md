@@ -11,6 +11,10 @@ All 51 tests pass with Thread Sanitizer after the moves. Shell entry points pass
 
 Hover is row-local, uses 10% neutral white over the dark background, resets on disappearance and never changes keyboard selection. Selected rows keep the system selection color. The panel explicitly accepts mouse movement. The native automation host delivered synthetic mouseMoved events but did not produce SwiftUI tracking callbacks, so this is **not** evidence of physical pointer enter/exit behavior; that interaction remains a manual verification item.
 
+Release source commit `44b0b34` passed GitHub Actions run `34037111830`. Apple accepted the application (`0424f439-4e66-4a61-8da2-cf2ea0768e37`) and final DMG (`4c4d86bd-f6ac-4192-8de0-c872922a3043`). Both offline tickets and Gatekeeper assessments pass. The mounted DMG contains version 1.5.1 (15), both CPU architectures and the exact built executable. The signed feed and payload pass EdDSA verification and all three release checksums match.
+
+After publishing `v1.5.1`, the installed 1.5.0 app found the update through the production feed, downloaded it and installed/relaunched using Sparkle. `/Applications/WindowPilot.app` now reports 1.5.1 (15); its executable matches the release, nested signatures and its stapled ticket validate, and Gatekeeper accepts it. The live settings show Accessibility authorized, window switching ready, login startup enabled, compact rows enabled and both automatic update options enabled. Opening and cancelling the installed switcher works. The prior notarized 1.5.0 app is retained in the ignored `.build/updater-bootstrap/` directory.
+
 ![Shipping rows in the isolated dark preview; keyboard selection shown](images/row-preview-dark.png)
 
 ## Configurable shortcuts and native proportions, 1.5.0
