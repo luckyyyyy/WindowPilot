@@ -25,6 +25,12 @@ enum WindowPolicy {
             && f.closable && f.matchingLayers.contains(0)
     }
 
+    /// AX can expose only helper panels even when a regular app is running.
+    /// Decide after filtering so those panels cannot suppress its application row.
+    static func needsApplicationFallback(regularApp: Bool, acceptedWindowCount: Int) -> Bool {
+        regularApp && acceptedWindowCount == 0
+    }
+
     static func title(axTitle: String, document: String, serverTitle: String, appName: String) -> String {
         let title = axTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if !title.isEmpty { return title }

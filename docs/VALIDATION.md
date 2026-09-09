@@ -1,5 +1,17 @@
 # Validation
 
+## Application fallback for WeChat, 1.5.3
+
+On September 9, 2026, the installed 1.5.2 switcher omitted the running WeChat 4.1.13 application despite having no exclusion rules and including hidden, minimized and windowless apps. Its AX window list contained only an untitled, nonmodal, nonclosable `AXDialog` matching WindowServer layer 8. The matching 240 × 50 helper had alpha zero. Filtering that panel was correct; checking the unfiltered AX list for emptiness incorrectly suppressed the regular application's fallback row.
+
+The catalog now decides whether to add an application row after filtering, using the accepted-window count. The row uses the existing activation/reopen path and remains subject to windowless/hidden/application exclusion preferences. Accessory apps do not receive fallback rows, accepted windows do not gain duplicate application rows, and helper-panel acceptance rules are unchanged. Regression tests cover the observed WeChat facts, accessory/duplicate exclusions, and preference filtering.
+
+All 55 tests passed locally with Thread Sanitizer (45 core/input/search/shortcut/preference cases and 10 isolated AppKit cases).
+
+The Developer ID signed 1.5.3 (17) build was temporarily installed locally for UI verification. The same switcher now included WeChat; selecting its row made `com.tencent.xinWeChat` the actual foreground process and reopened the `Weixin` standard window with close/minimize controls. Accessibility remained authorized and keyboard switching ready. The original 1.5.2 bundle is preserved under the ignored `.build/updater-bootstrap/` directory for the production updater check.
+
+Apple accepted the app (`e7cd9cb0-52cd-479a-b051-6701f9bf9a2d`) and DMG (`1d57dc70-72ed-4a17-8e5e-96cd4ad442e5`). The mounted DMG contains 1.5.3 (17), both CPU architectures, the exact built executable, a valid strict nested signature and offline ticket, and passes Gatekeeper. The feed metadata, EdDSA feed/archive signatures and all release checksums verify.
+
 ## Native switcher glass, 1.5.2
 
 The switcher now hosts its SwiftUI content in AppKit's `NSGlassEffectView` using the standard glass style. The 93%-opaque window-color fill, extra SwiftUI material and custom white border are removed. AppKit owns the glass backdrop and edge; the panel remains nonopaque with a clear window background. General settings offer System (default), Light and Dark appearances, persisted across launches and applied to the whole app through `NSApplication.appearance`. System sets the override to nil so native windows and SwiftUI continue following macOS. Neutral hover feedback uses the current foreground color so it remains visible in Aqua and Dark Aqua. The app already requires macOS 26, where this public glass API is available; no OS-version-specific border is drawn.

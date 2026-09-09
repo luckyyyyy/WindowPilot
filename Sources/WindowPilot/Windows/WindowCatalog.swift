@@ -148,8 +148,9 @@ final class WindowCatalog: @unchecked Sendable {
                                          isAppOnly: false, focused: isFocused, lastUsed: entry.lastUsed))
             }
             entries[app.pid] = next
-            // Filtered-out overlay windows must not turn into a fake app-only entry.
-            if windows.isEmpty && app.regular {
+            // Preserve a regular application's reopen target when AX exposes only
+            // rejected helper panels. Preferences still control app-only rows.
+            if WindowPolicy.needsApplicationFallback(regularApp: app.regular, acceptedWindowCount: next.count) {
                 let id = "app-\(app.pid)"
                 if app.pid == frontPID && lastFocusedID != id { clock = DispatchTime.now().uptimeNanoseconds; lastFocusedID = id; appUsage[app.pid] = clock }
                 result.append(WindowItem(id: id, pid: app.pid, appName: app.name, bundleID: app.bundleID,

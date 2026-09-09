@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import WindowPilot
 
@@ -29,6 +30,36 @@ import Testing
     #expect(WindowPolicy.title(axTitle: "", document: "file:///tmp/My%20Draft.txt", serverTitle: "Other", appName: "TextEdit") == "My Draft.txt")
     #expect(WindowPolicy.title(axTitle: "", document: "", serverTitle: "Safari 窗口", appName: "Safari") == "Safari 窗口")
     #expect(WindowPolicy.title(axTitle: "", document: "", serverTitle: "", appName: "QQ音乐") == "QQ音乐")
+}
+
+@Test func weChatHelperPanelDoesNotSuppressApplicationFallback() {
+    // WeChat 4.1.13 exposes this transparent helper without an accessible main window.
+    let windows = [WindowPolicy.Facts(subrole: "AXDialog", closable: false, matchingLayers: [8])]
+    let accepted = windows.filter(WindowPolicy.accepts)
+    #expect(accepted.isEmpty)
+    #expect(WindowPolicy.needsApplicationFallback(regularApp: true, acceptedWindowCount: accepted.count))
+    #expect(WindowPolicy.needsApplicationFallback(regularApp: true, acceptedWindowCount: 0))
+    // Accessory overlays stay absent, and real windows do not gain duplicate app rows.
+    #expect(!WindowPolicy.needsApplicationFallback(regularApp: false, acceptedWindowCount: accepted.count))
+    #expect(!WindowPolicy.needsApplicationFallback(regularApp: true, acceptedWindowCount: 1))
+}
+
+@Test @MainActor func applicationFallbackStillHonorsUserFilters() {
+    let suite = "WindowPilotTests.fallback.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let preferences = Preferences(defaults: defaults)
+    let item = WindowItem(id: "app-1", pid: 1, appName: "WeChat", bundleID: "com.tencent.xinWeChat",
+                          title: "WeChat", minimized: false, hidden: false, isAppOnly: true, focused: false, lastUsed: 0)
+    #expect(preferences.accepts(item))
+    preferences.includeWindowless = false
+    #expect(!preferences.accepts(item))
+    preferences.includeWindowless = true
+    preferences.rules = [ExclusionRule(bundleID: item.bundleID, appName: item.appName, titlePattern: "")]
+    #expect(!preferences.accepts(item))
+    preferences.rules = []
+    preferences.excludedBundleIDs = item.bundleID
+    #expect(!preferences.accepts(item))
 }
 
 @Test func rulesOnlyExcludeTheChosenAppAndTitle() {
